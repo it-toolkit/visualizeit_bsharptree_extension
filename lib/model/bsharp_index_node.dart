@@ -3,11 +3,12 @@ import 'package:collection/collection.dart';
 
 class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
   BSharpNode<T> leftNode;
-  List<IndexRecord<T>> rightNodes = List.empty(growable: true); //Tiene sentido que esto tenga una lista?
+  List<IndexRecord<T>> rightNodes = List.empty(growable: true);
 
   BSharpIndexNode(super.id, super.level, T value, this.leftNode, BSharpNode<T> rightNode){
     rightNodes.add(IndexRecord<T>(value, rightNode));
   }
+  BSharpIndexNode.createNode(super.id, super.level, this.leftNode, this.rightNodes);
   
   @override
   int length() => rightNodes.length;
@@ -23,14 +24,19 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
     // TODO: implement addNode
     throw UnimplementedError();
   }
+
+  void addIndexRecordToNode(IndexRecord<T> newRecord){
+    rightNodes.add(newRecord);
+    rightNodes.sort((a, b) => a.key.compareTo(b.key));
+  }
   
   @override
   T firstKey() {
     return rightNodes.first.key;
   }
 
-  IndexRecord<T>? getIndexRecordFor(T keyToFind){
-    return rightNodes.singleWhere((indexRecord) => indexRecord.key == keyToFind);
+  IndexRecord<T>? findIndexRecordFor(T keyToFind){
+    return rightNodes.singleWhereOrNull((indexRecord) => indexRecord.key == keyToFind);
   }
 
   //Encuentra el hermano derecho a una clave
@@ -38,12 +44,9 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
     return rightNodes.firstWhereOrNull((element) => element.key.compareTo(keyToFind)>0);
   }
 
-  
-
-
   //Encuentra el hermano izquierdo, si está en la lista de rightNodes
   IndexRecord<T>? findLeftSiblingOf(T keyToFind) {
-    var rightNode = rightNodes.firstWhereOrNull((element) => element.key.compareTo(keyToFind)<0);
+    return rightNodes.lastWhereOrNull((element) => element.key.compareTo(keyToFind)<0);
   }
 
   
@@ -54,4 +57,9 @@ class IndexRecord<T extends Comparable<T>> {
   BSharpNode<T> rightNode;
 
   IndexRecord(this.key, this.rightNode);
+
+  @override
+  String toString() {
+    return "($key)${rightNode.id}";
+  }
 }
