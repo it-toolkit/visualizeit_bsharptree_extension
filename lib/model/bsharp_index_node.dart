@@ -14,12 +14,6 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
   int length() => rightNodes.length;
   
   @override
-  (BSharpNode<T>, BSharpNode<T>) splitNode() {
-    // TODO: implement splitNode
-    throw UnimplementedError();
-  }
-
-  @override
   void addToNode(T value) {
     // TODO: implement addNode
     throw UnimplementedError();
@@ -39,6 +33,10 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
     return rightNodes.singleWhereOrNull((indexRecord) => indexRecord.key == keyToFind);
   }
 
+  IndexRecord<T>? findIndexRecordById(int id){
+    return rightNodes.singleWhereOrNull((indexRecord) => indexRecord.rightNode.id == id);
+  }
+
   //Encuentra el hermano derecho a una clave
   IndexRecord<T>? findRightSiblingOf(T keyToFind) {
     return rightNodes.firstWhereOrNull((element) => element.key.compareTo(keyToFind)>0);
@@ -47,6 +45,15 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
   //Encuentra el hermano izquierdo, si está en la lista de rightNodes
   IndexRecord<T>? findLeftSiblingOf(T keyToFind) {
     return rightNodes.lastWhereOrNull((element) => element.key.compareTo(keyToFind)<0);
+  }
+
+  BSharpNode<T> findLeftSiblingById(int id){
+    int siblingPosition = rightNodes.indexWhere((element) => element.rightNode.id == id) - 1;
+    if(siblingPosition < 0 ) {
+      return leftNode;
+    } else {
+      return rightNodes.elementAt(siblingPosition).rightNode;
+    }
   }
 
   

@@ -7,6 +7,5 @@ abstract class BSharpNode<T extends Comparable<T>>{
   BSharpNode(this.id, this.level);
   void addToNode(T value);
   int length();
-  (BSharpNode<T>, BSharpNode<T>) splitNode();
   T firstKey();
 }
