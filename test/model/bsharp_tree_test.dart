@@ -152,6 +152,7 @@ void main(){
     tree.insert(33);
     tree.insert(99);
     tree.insert(10);
+    tree.printTree();
     tree.insert(121);
     tree.insert(2);
     tree.insert(21);

@@ -45,8 +45,8 @@ class BSharpTree<T extends Comparable<T>> {
         rightNode.leftSibling = node;
         //Crear el nuevo nodo con la key más chica del derecho
         var newRoot = BSharpIndexNode<T>(nodesQuantity++, 1, rightNode.values.first, node, rightNode);
-        node.parentNode = newRoot;
-        rightNode.parentNode = newRoot;
+        node.parent = newRoot;
+        rightNode.parent = newRoot;
         _rootNode = newRoot;
       }
     } else {
@@ -54,8 +54,6 @@ class BSharpTree<T extends Comparable<T>> {
     }
 
   }
-
-  bool _isRootOverflowed(BSharpSequentialNode<dynamic> node) => node.length()  > _rootMaxCapacity;
 
   void traverse(){
     if(_rootNode!=null){
@@ -78,7 +76,6 @@ class BSharpTree<T extends Comparable<T>> {
   IndexRecord<T>? insertRecursively(BSharpNode<T>? current, BSharpIndexNode<T>? parent, T value) {
     if(current!=null && current.isLevelZero){ // Encontré el nodo secuencial donde deberia insertar
       var node = current as BSharpSequentialNode<T>;
-      var parentIndexRecord = parent?.findIndexRecordFor(node.firstKey());
       node.addToNode(value);
       if(_isNodeOverflowed(node)){ //Si se supera la maxima capacidad del nodo
         print("Supera la capacidad del nodo al insertar value: $value");
@@ -86,13 +83,6 @@ class BSharpTree<T extends Comparable<T>> {
           
           var hasBalancedWithSibling = false;
 
-          /*var rightSiblingRecord = parent.findRightSiblingOf(node.firstKey());
-          var rightSiblingNode = rightSiblingRecord != null ? rightSiblingRecord.rightNode as BSharpSequentialNode<T> : null;
-          if (rightSiblingNode!=null && !_isNodeOverflowed(rightSiblingNode)){ //Balancea si existe hermano derecho y no está lleno
-            print("balanceando con hermano derecho");
-            balanceSequentialNodes(node,rightSiblingNode, rightSiblingRecord);
-            hasBalancedWithSibling = true;
-          }*/
           var rightSiblingNode = node.rightSibling;
           if(_hasCapacityLeft(rightSiblingNode)){
             print("balanceando con hermano derecho");
@@ -100,13 +90,6 @@ class BSharpTree<T extends Comparable<T>> {
             hasBalancedWithSibling = true;
           }
                     
-          /*var leftSiblingRecord = parent.findLeftSiblingOf(node.firstKey()); //Buscamos al hermano izquierdo
-          var leftSiblingNode = (leftSiblingRecord != null ? leftSiblingRecord.rightNode : parent.leftNode) as BSharpSequentialNode<T>;
-          if (!hasBalancedWithSibling && !_isNodeOverflowed(leftSiblingNode)){ //Si el hermano izquierdo no está lleno
-            print("balanceando con hermano izquierdo");
-            balanceSequentialNodes(leftSiblingNode, node, parentIndexRecord); //leftSiblingRecord deberia ir?
-            hasBalancedWithSibling = true;
-          }*/
           var leftSiblingNode = node.leftSibling;
           if (!hasBalancedWithSibling && _hasCapacityLeft(leftSiblingNode)){
             print("balanceando con hermano izquierdo");
@@ -141,46 +124,54 @@ class BSharpTree<T extends Comparable<T>> {
       //Intento agregar la key en el nodo
       if(promotedKey!=null){
         print("key promocionada: ${promotedKey.key}");
-        //var parentIndexRecord = parent?.findIndexRecordFor(node.firstKey());
         node.addIndexRecordToNode(promotedKey);
-        if(node.length() > maxCapacity){ //Se supera la maxima capacidad del nodo
+        if(_isNodeOverflowed(node)){ //Se supera la maxima capacidad del nodo
           print("la promoción hace desbordar el nodo indice");
           if(parent!=null){
             //Intento rotar una clave al hermano derecho
             var rightSiblingRecord = parent.findRightSiblingOf(node.firstKey());
-            var rightSiblingNode = rightSiblingRecord != null ? rightSiblingRecord.rightNode as BSharpIndexNode<T> : null;
-            if (rightSiblingNode!=null && rightSiblingNode.length() < maxCapacity){ //Si el hermano derecho no está lleno
+            var rightSiblingNode = node.rightSibling;
+            if (_hasCapacityLeft(rightSiblingNode)){ //Si el hermano derecho no está lleno
               print("balanceando index node con hermano derecho");
               var biggestRecordFromLeft = node.rightNodes.removeLast();
-              balanceIndexNodeRight(rightSiblingRecord, rightSiblingNode, biggestRecordFromLeft);
+              balanceIndexNodeRight(rightSiblingRecord, rightSiblingNode!, biggestRecordFromLeft);
               return null;
             }
             //Intento rotar una clave al hermano izquierdo
             var leftSiblingRecord = parent.findLeftSiblingOf(node.firstKey()); //Buscamos al hermano izquierdo
-            var leftSiblingNode = (leftSiblingRecord != null && leftSiblingRecord.rightNode.id != node.id ? leftSiblingRecord.rightNode : parent.leftNode) as BSharpIndexNode<T>;
-            if (leftSiblingNode.length() < maxCapacity){
+            var leftSiblingNode = node.leftSibling;
+            if (_hasCapacityLeft(leftSiblingNode)){
               print("balanceando index node con hermano izquierdo");
               var smallestRecordFromRight = node.rightNodes.removeAt(0);
-              balanceIndexNodeLeft(leftSiblingRecord, node, leftSiblingNode, smallestRecordFromRight);
+              balanceIndexNodeLeft(leftSiblingRecord, node, leftSiblingNode!, smallestRecordFromRight);
               return null;
             }
             //no puedo rotar ni a izq ni a derecha, tengo que juntar las claves y dividir el nodo en 3
             if(rightSiblingRecord!=null && rightSiblingNode!=null ){
               print("fusionando index node a derecha");
-              return fuseIndexNodes(rightSiblingRecord, rightSiblingNode, node);
+              return fuseSiblingIndexNodes(node, rightSiblingNode, parent);
+              //return fuseIndexNodes(rightSiblingRecord, rightSiblingNode, node);
             } else {
               print("fusionando index node a izquierda");
-              return fuseIndexNodes(leftSiblingRecord!, node, leftSiblingNode);
+              return fuseSiblingIndexNodes(leftSiblingNode!, node, parent);
             }
           } else {
             //current es la raiz y tengo que dividirla en dos
-            if(node.length() > _rootMaxCapacity){ //Si se supera la maxima capacidad de la raiz
+            if(_isRootOverflowed(node)){ //Si se supera la maxima capacidad de la raiz
               print("el nodo indice es la raíz, hay que realizar un spliteo del nodo raíz");
               var recordToPromote = node.rightNodes.elementAt(node.length()~/2);
               var rightNode=BSharpIndexNode<T>.createNode(nodesQuantity++, node.level, recordToPromote.rightNode, node.rightNodes.sublist((node.length()~/2)+1));
+              node.rightSibling = rightNode;
+              rightNode.leftSibling = node;
               node.rightNodes=node.rightNodes.sublist(0,node.length()~/2);
+              // Cortamos la relación de hermanos
+              var lastNodeOnLeft = node.rightNodes.last.rightNode;
+              lastNodeOnLeft.rightSibling = null;
+              var firstNodeOnRight = rightNode.leftNode;
+              firstNodeOnRight.leftSibling = null;
               //Crear el nuevo nodo con la key más chica del derecho
               var bSharpIndexNode = BSharpIndexNode<T>(nodesQuantity++, node.level+1, recordToPromote.key, node, rightNode);
+              rightNode.parent = bSharpIndexNode;
               _rootNode = bSharpIndexNode;
             }
           }
@@ -194,6 +185,8 @@ class BSharpTree<T extends Comparable<T>> {
 
   bool _isNodeOverflowed(BSharpNode<T> node) => node.length() > maxCapacity;
   bool _hasCapacityLeft(BSharpNode<T>? node) => node!=null && node.length() < maxCapacity;
+  bool _isRootOverflowed(BSharpNode node) => node.length()  > _rootMaxCapacity;
+
 
   void balanceIndexNodeLeft(IndexRecord<T>? leftSiblingRecord, BSharpIndexNode<T> node, BSharpIndexNode<T> leftSiblingNode, IndexRecord<T> smallestRecordFromRight) {
     var newIndexRecord = IndexRecord(leftSiblingRecord!.key, node.leftNode);
@@ -209,50 +202,30 @@ class BSharpTree<T extends Comparable<T>> {
     rightSiblingRecord.key = biggestRecordFromLeft.key;
   }
 
-  IndexRecord<T> fuseIndexNodes(IndexRecord<T> rightSiblingRecord, BSharpIndexNode<T> rightNode, BSharpIndexNode<T> node) {
+  IndexRecord<T> fuseSiblingIndexNodes(BSharpIndexNode<T> node, BSharpIndexNode<T> siblingNode, BSharpIndexNode<T> parent){
+    var siblingRecord = parent.findIndexRecordById(siblingNode.id);
     var allIndexRecords = node.rightNodes;
-    var parentIndexRecord = IndexRecord(rightSiblingRecord.key, rightNode.leftNode);
+    var parentIndexRecord = IndexRecord(siblingRecord!.key, siblingNode.leftNode); //TODO Hay un caso en elque siblingRecord == null?
     allIndexRecords.add(parentIndexRecord);
-    allIndexRecords.addAll(rightNode.rightNodes);
+    allIndexRecords.addAll(siblingNode.rightNodes);
     allIndexRecords.sort((a, b) => a.key.compareTo(b.key));
     node.rightNodes = allIndexRecords.sublist(0, allIndexRecords.length~/3);
+    node.rightNodes.last.rightNode.rightSibling = null;
 
     var firstPromotedIndexRecord = allIndexRecords.elementAt(allIndexRecords.length~/3);
-    rightNode.leftNode = firstPromotedIndexRecord.rightNode;
-    rightNode.rightNodes = allIndexRecords.sublist((allIndexRecords.length~/3)+1, (allIndexRecords.length*2)~/3);
-    rightSiblingRecord.key = firstPromotedIndexRecord.key;
+    siblingNode.leftNode = firstPromotedIndexRecord.rightNode;
+    siblingNode.leftNode.leftSibling = null;
+    siblingNode.rightNodes = allIndexRecords.sublist((allIndexRecords.length~/3)+1, (allIndexRecords.length*2)~/3);
+    siblingRecord.key = firstPromotedIndexRecord.key;
 
     var secondPromotedIndexRecord = allIndexRecords.elementAt((allIndexRecords.length*2)~/3);    
 
     var newNode = BSharpIndexNode<T>.createNode(nodesQuantity++, node.level, secondPromotedIndexRecord.rightNode, allIndexRecords.sublist(((allIndexRecords.length*2)~/3)+1));
-    
+    newNode.leftSibling = siblingNode;
+    newNode.parent = parent;
+    siblingNode.rightSibling = newNode;
     
     return IndexRecord(secondPromotedIndexRecord.key, newNode);
-
-  }
-
-  IndexRecord<T> fuseSequentialNodes(BSharpSequentialNode<T> node, BSharpSequentialNode<T> siblingNode, IndexRecord<T>? siblingRecord) {
-    var allKeys = node.values + siblingNode.values;
-    allKeys.sort();
-    node.values = allKeys.sublist(0, allKeys.length~/3);
-    var newNode = BSharpSequentialNode<T>.createNode(nodesQuantity++, 0, allKeys.sublist(allKeys.length~/3, (allKeys.length*2)~/3));
-    node.nextNode = newNode;
-    newNode.nextNode = siblingNode;
-    siblingNode.values = allKeys.sublist((allKeys.length*2)~/3);
-    if(siblingRecord != null) {
-      siblingRecord.key = siblingNode.firstKey();
-    }
-    return IndexRecord(newNode.firstKey(), newNode);
-  }
-
-  void balanceSequentialNodes(BSharpSequentialNode<T> node, BSharpSequentialNode<T> siblingNode, IndexRecord<T>? siblingRecord) {
-    var allKeys = node.values + siblingNode.values;
-    allKeys.sort();
-    node.values = allKeys.sublist(0, allKeys.length~/2);
-    siblingNode.values = allKeys.sublist(allKeys.length~/2);
-    if(siblingRecord != null) {
-      siblingRecord.key = siblingNode.firstKey();
-    }
   }
 
   void balanceSequentialNodeWithSibling(BSharpSequentialNode<T> node, BSharpSequentialNode<T> siblingNode, BSharpIndexNode<T> parentNode) {
@@ -273,9 +246,10 @@ class BSharpTree<T extends Comparable<T>> {
     node.values = allKeys.sublist(0, allKeys.length~/3);
     
     var newNode = BSharpSequentialNode<T>.createNode(nodesQuantity++, 0, allKeys.sublist(allKeys.length~/3, (allKeys.length*2)~/3));
+    print("creando nodo: ${newNode.id}");
     newNode.leftSibling = node;
     newNode.rightSibling = siblingNode;
-    newNode.parentNode = parentNode;
+    newNode.parent = parentNode;
     newNode.nextNode = siblingNode;
 
     node.rightSibling = newNode;
