@@ -3,9 +3,6 @@ import 'package:visualizeit_bsharptree_extension/model/bsharp_node.dart';
 
 class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T>{
   List<T> values = <T>[];
-  //BSharpIndexNode<T>? parent;
-  //BSharpSequentialNode<T>? leftSibling;
-  //BSharpSequentialNode<T>? rightSibling;
   BSharpSequentialNode<T>? nextNode;
 
   @override
@@ -27,11 +24,11 @@ class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T>{
   T firstKey() => values.first;
 
   @override
-  BSharpSequentialNode<T>? get leftSibling => super.leftSibling != null ? super.leftSibling as BSharpSequentialNode<T> : null;
+  BSharpSequentialNode<T>? getleftSibling() => super.leftSibling != null ? super.leftSibling as BSharpSequentialNode<T> : null;
 
   @override
-  BSharpSequentialNode<T>? get rightSibling => super.rightSibling != null ? super.rightSibling as BSharpSequentialNode<T> : null;
+  BSharpSequentialNode<T>? getRightSibling() => super.rightSibling != null ? super.rightSibling as BSharpSequentialNode<T> : null;
 
   @override
-  BSharpIndexNode<T>? get parent => super.parent != null ? super.parent as BSharpIndexNode<T> : null;
+  BSharpIndexNode<T>? getParent() => super.parent != null ? super.parent as BSharpIndexNode<T> : null;
 }

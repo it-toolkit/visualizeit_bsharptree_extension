@@ -3,9 +3,6 @@ import 'package:collection/collection.dart';
 
 class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
   BSharpNode<T> leftNode;
-  //BSharpIndexNode<T>? leftSibling;
-  //BSharpIndexNode<T>? rightSibling;
-  //BSharpIndexNode<T>? parent;
   List<IndexRecord<T>> rightNodes = List.empty(growable: true);
 
   BSharpIndexNode(super.id, super.level, T value, this.leftNode, BSharpNode<T> rightNode){
@@ -16,12 +13,6 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
   @override
   int length() => rightNodes.length;
   
-  @override
-  void addToNode(T value) {
-    // TODO: implement addNode
-    throw UnimplementedError();
-  }
-
   void addIndexRecordToNode(IndexRecord<T> newRecord){
     rightNodes.add(newRecord);
     rightNodes.sort((a, b) => a.key.compareTo(b.key));
@@ -60,13 +51,13 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
   }
 
   @override
-  BSharpIndexNode<T>? get leftSibling => super.leftSibling != null ? super.leftSibling as BSharpIndexNode<T> : null;
+  BSharpIndexNode<T>? getLeftSibling() => super.leftSibling != null ? super.leftSibling as BSharpIndexNode<T> : null;
 
   @override
-  BSharpIndexNode<T>? get rightSibling => super.rightSibling != null ? super.rightSibling as BSharpIndexNode<T> : null;
+  BSharpIndexNode<T>? getRightSibling() => super.rightSibling != null ? super.rightSibling as BSharpIndexNode<T> : null;
 
   @override
-  BSharpIndexNode<T>? get parent => super.parent != null ? super.parent as BSharpIndexNode<T> : null;
+  BSharpIndexNode<T>? getParent() => super.parent != null ? super.parent as BSharpIndexNode<T> : null;
 }
 
 class IndexRecord<T extends Comparable<T>> {
