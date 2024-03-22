@@ -1,3 +1,4 @@
+import 'package:visualizeit_bsharptree_extension/exception/ElementNotFoundException.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_index_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_sequential_node.dart';
@@ -350,7 +351,7 @@ class BSharpTree<T extends Comparable<T>> {
           }
         }
       } else {
-        //TODO Ver que hacemos si no encontramos el value
+        throw ElementNotFoundException("Element $value not found in the tree");
       }
     } else {
       var node = current as BSharpIndexNode<T>;

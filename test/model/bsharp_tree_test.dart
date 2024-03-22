@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:visualizeit_bsharptree_extension/exception/ElementNotFoundException.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 
 void main(){
@@ -181,6 +182,18 @@ void main(){
   });
 
   group("remove value tests - ", () { 
+
+    test('element not found',(){
+      var tree = BSharpTree<num>(3);
+      tree.insert(10);
+      tree.insert(22);
+      tree.insert(150);
+      tree.insert(166);
+      tree.printTree();
+
+      expect(() =>tree.remove(7), throwsA(const TypeMatcher<ElementNotFoundException>()));     
+    });
+
     test('remove with right sibling balancing',(){
       var tree = BSharpTree<num>(3);
       tree.insert(10);
