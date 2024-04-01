@@ -14,7 +14,6 @@ class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T>{
 
   BSharpSequentialNode.createNode(super.id, super.level, this.values);
   
-  @override
   void addToNode(T value){
     values.add(value);
     values.sort();
@@ -23,12 +22,23 @@ class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T>{
   @override
   T firstKey() => values.first;
 
-  @override
-  BSharpSequentialNode<T>? getleftSibling() => super.leftSibling != null ? super.leftSibling as BSharpSequentialNode<T> : null;
-
-  @override
+  BSharpSequentialNode<T>? getLeftSibling() => super.leftSibling != null ? super.leftSibling as BSharpSequentialNode<T> : null;
   BSharpSequentialNode<T>? getRightSibling() => super.rightSibling != null ? super.rightSibling as BSharpSequentialNode<T> : null;
-
-  @override
   BSharpIndexNode<T>? getParent() => super.parent != null ? super.parent as BSharpIndexNode<T> : null;
+
+  void removeValue(T value) {
+    this.values.remove(value);
+    BSharpIndexNode<T>? parentNode = getParent();
+    if(parentNode != null){ //No es el nodo raiz
+      IndexRecord<T>? nodeIndexRecord = parentNode.findIndexRecordById(id);
+      //Se actualiza la key del index record
+      if(nodeIndexRecord!=null && length() > 0){
+        nodeIndexRecord.key = nodeIndexRecord.rightNode.firstKey();
+      }
+    }
+  }
+
+  bool isValueOnNode(T valueToFind) {
+    return values.contains(valueToFind);
+  }
 }

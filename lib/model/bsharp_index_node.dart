@@ -9,6 +9,32 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
     rightNodes.add(IndexRecord<T>(value, rightNode));
   }
   BSharpIndexNode.createNode(super.id, super.level, this.leftNode, this.rightNodes);
+
+  void fixFamilyRelations(){
+    var allChildrenNodes = _getAllChildrenNodes();
+
+    for (var i = 0; i < allChildrenNodes.length; i++) {
+      var node = allChildrenNodes.elementAt(i);
+      node.parent = this;
+      if(i == 0){
+        node.leftSibling = null;
+        node.rightSibling = allChildrenNodes.elementAt(i+1);
+      } else if(i == allChildrenNodes.length - 1) {
+        node.rightSibling = null;
+        node.leftSibling = allChildrenNodes.elementAt(i-1);
+      } else {
+        node.rightSibling = allChildrenNodes.elementAt(i+1);
+        node.leftSibling = allChildrenNodes.elementAt(i-1);
+      }
+    }
+  }
+
+  List<BSharpNode<T>> _getAllChildrenNodes(){
+    List<BSharpNode<T>> allNodes = List.empty(growable: true);
+    allNodes.add(leftNode);
+    allNodes.addAll(rightNodes.map((e) => e.rightNode));
+    return allNodes;
+  }
   
   @override
   int length() => rightNodes.length;
@@ -50,13 +76,8 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
     }
   }
 
-  @override
   BSharpIndexNode<T>? getLeftSibling() => super.leftSibling != null ? super.leftSibling as BSharpIndexNode<T> : null;
-
-  @override
   BSharpIndexNode<T>? getRightSibling() => super.rightSibling != null ? super.rightSibling as BSharpIndexNode<T> : null;
-
-  @override
   BSharpIndexNode<T>? getParent() => super.parent != null ? super.parent as BSharpIndexNode<T> : null;
 }
 
