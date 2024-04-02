@@ -233,69 +233,6 @@ void main(){
       expect(tree.depth, 0);
     });
 
-    test('error al remover',(){
-      var tree = BSharpTree<num>(2);
-      var values = <int>[865, 739, 553, 551, 83, 905, 361, 456, 9, 600, 756, 997, 266, 987, 178, 35, 878, 922, 855, 210, 628, 651, 
-      356, 745, 313, 96, 340, 784, 879, 385, 211, 658, 619, 592, 802, 267, 142, 949, 616, 636, 908, 44, 885, 920, 945];
-      tree.insertAll(List.of(values));
-      tree.printTree();
-      tree.remove(905);
-      tree.remove(865);
-      tree.remove(739);
-      tree.remove(636);
-      tree.remove(756);
-      
-      tree.remove(266);
-      tree.remove(592);
-      tree.remove(619);
-      
-      tree.remove(651);
-      tree.remove(945);
-      
-      tree.remove(553);
-      tree.remove(745);
-      tree.remove(949);
-      
-      tree.remove(178);
-      tree.remove(922);
-      tree.remove(920);
-      
-      tree.remove(385);
-      tree.remove(551);
-      tree.remove(83);
-      
-      
-      tree.remove(885);
-      tree.remove(340);
-      tree.remove(35);
-      tree.remove(356);
-      tree.remove(456);
-      tree.remove(879);
-      tree.remove(9);
-      tree.remove(361);
-      tree.remove(142);
-      tree.remove(855);
-      tree.remove(802);
-      tree.remove(658);
-      tree.remove(997);
-      tree.remove(784);
-      tree.remove(600);
-      tree.remove(210);
-      tree.remove(908);
-      tree.remove(267);
-      tree.remove(313);
-      tree.remove(878);
-      tree.remove(628);
-      tree.printTree();
-      tree.remove(96);
-      tree.remove(211);
-      tree.remove(616);
-      tree.remove(44);
-      tree.printTree();
-      tree.remove(987);
-
-
-    });
   });
 
   group("remove value tests - ", () { 

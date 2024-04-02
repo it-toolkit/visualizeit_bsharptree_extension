@@ -79,6 +79,16 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
   BSharpIndexNode<T>? getLeftSibling() => super.leftSibling != null ? super.leftSibling as BSharpIndexNode<T> : null;
   BSharpIndexNode<T>? getRightSibling() => super.rightSibling != null ? super.rightSibling as BSharpIndexNode<T> : null;
   BSharpIndexNode<T>? getParent() => super.parent != null ? super.parent as BSharpIndexNode<T> : null;
+
+  BSharpNode<T> findNextNodeForKey(T keyToFind) {
+    if(keyToFind.compareTo(firstKey())<0) {
+        //Si es menor al primer nodo derecho, tomo el izquierdo
+        return leftNode;
+      } else {
+        var potentialIndexRecord = rightNodes.lastWhere((element) => element.key.compareTo(keyToFind)<=0);
+        return potentialIndexRecord.rightNode;
+      }
+  }
 }
 
 class IndexRecord<T extends Comparable<T>> {
