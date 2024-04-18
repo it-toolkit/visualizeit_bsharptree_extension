@@ -95,6 +95,36 @@ class BSharpTree<T extends Comparable<T>> {
       print("no values to show");
     }
   }
+
+  Map<int,List<BSharpNode<T>>> getAllNodesByLevel(){
+    Map<int,List<BSharpNode<T>>> allNodesMap = {};
+    if(_rootNode != null){
+      
+      //allNodesMap.putIfAbsent(_rootNode!.level, () => [_rootNode!]);
+      addNodesByLevelRecursively(allNodesMap, _rootNode!);
+    } else {
+      allNodesMap = {0 : List.empty()};
+    }
+    
+    return allNodesMap;
+  }
+
+  void addNodesByLevelRecursively(Map<int,List<BSharpNode<T>>> nodesMap, BSharpNode<T> current){
+    List<BSharpNode<T>>? nodesList = nodesMap[current.level];
+    if(nodesList != null){
+      nodesList.add(current);
+    } else {
+      nodesMap.putIfAbsent(current.level, () => [current] );
+    }
+    //nodesMap.putIfAbsent(current.level, () => nodesMap[current.level] = );
+    if(!current.isLevelZero){
+      var node = current as BSharpIndexNode<T>;
+      addNodesByLevelRecursively(nodesMap, node.leftNode);
+      for (var indexRecord in node.rightNodes) {
+        addNodesByLevelRecursively(nodesMap, indexRecord.rightNode);
+      }
+    }
+  }
   
   /// Inserts recursively a [value] in the B# tree
   /// 
@@ -165,7 +195,9 @@ class BSharpTree<T extends Comparable<T>> {
         if(!isRoot(node) && isNodeUnderflowed(node)){
           print("el nodo tiene menos valores que la capacidad minima");
           
-          var hasBalancedWithSibling = _tryToBalanceSequentialNodesWithSibling(node, isOverMinCapacity);
+          //var hasBalancedWithSibling = _tryToBalanceSequentialNodesWithSibling(node, isOverMinCapacity);
+
+          var hasBalancedWithSibling = _tryToBalanceUnderflowedSequentialNodeWithSiblings(node);
           
           if(!hasBalancedWithSibling){
             // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
@@ -401,16 +433,60 @@ class BSharpTree<T extends Comparable<T>> {
     }
   }
   
-  /// Fuse a sequential [node] with its right sibling, if it exists.
-  /// If it doesn't exist, fuses the left sibling with the [node]
+  /// Fuse a sequential [node] with its adjacent siblings, splitting the values between the two of them and freeing the node.
+  /// If [node] doesn't have a right sibling, it tries to fuse with its left sibling and the left sibling of the left sibling.
+  /// If [node] doesn't have a left sibling, it tries to fuse with his right sibling, and the right sibling of the right sibling.
+  /// If all of the above fails, it means that the node only has one sibling, and fuses with it
   IndexRecord<T>? _fuseSequentialNodeWithAnySibling(BSharpSequentialNode<T> node) {
-    if(node.getRightSibling() != null){
-      print("fusionando sequential node con hermano derecho");
-      return _fuseSiblingSequentialNodes(node, node.getRightSibling()!, node.getParent()!);
-    } else {
-      print("fusionando sequential node con hermano izquierdo");
-      return _fuseSiblingSequentialNodes(node.getLeftSibling()!, node, node.getParent()!);
+    var rightSiblingNode = node.getRightSibling();
+    var leftSiblingNode = node.getLeftSibling();
+
+    IndexRecord<T>? indexRecordToUpdate;
+
+    if(rightSiblingNode != null && leftSiblingNode != null){
+      print("fusionando node con hermanos derechos e izquierdo");
+      indexRecordToUpdate = _fuseSequentialNodeWithTwoSiblings(node, leftSiblingNode, rightSiblingNode);
+      leftSiblingNode.nextNode = rightSiblingNode;
+      return indexRecordToUpdate;
     }
+
+    // The node is the leftmost node, so you have to fuse with his right sibling, and the right sibling of the right sibling
+    if(leftSiblingNode == null && rightSiblingNode != null && rightSiblingNode.getRightSibling() != null){
+      return _fuseSequentialNodeWithTwoSiblings(node, rightSiblingNode, rightSiblingNode.getRightSibling()!);
+    }
+
+    // The node is the rightmost node, so you have to fuse with his left sibling, and the left sibling of the left sibling
+    if(rightSiblingNode == null && leftSiblingNode != null && leftSiblingNode.getLeftSibling() != null){
+      indexRecordToUpdate = _fuseSequentialNodeWithTwoSiblings(node, leftSiblingNode.getLeftSibling()!, leftSiblingNode);
+      leftSiblingNode.nextNode = null;
+      return indexRecordToUpdate;
+    }
+
+    print("fusionando sequential node con hermano izquierdo");
+    return _fuseSiblingSequentialNodes(node.getLeftSibling()!, node, node.getParent()!);
+  }
+
+  IndexRecord<T>? _fuseSequentialNodeWithTwoSiblings(BSharpSequentialNode<T> node, BSharpSequentialNode<T> leftSiblingNode, BSharpSequentialNode<T> rightSiblingNode) {
+    print("fusionando nodos con id: ${node.id} con sus hermanos ${leftSiblingNode.id} y ${rightSiblingNode.id}");
+    var leftSiblingRecord = node.getParent()!.findIndexRecordById(leftSiblingNode.id);
+    var rightSiblingRecord = node.getParent()!.findIndexRecordById(rightSiblingNode.id);
+    var nodeRecord = node.getParent()!.findIndexRecordById(node.id);
+    var allKeys = node.values + leftSiblingNode.values + rightSiblingNode.values;
+    allKeys.sort();
+
+    leftSiblingNode.values = allKeys.sublist(0, allKeys.length~/2);
+    rightSiblingNode.values = allKeys.sublist(allKeys.length~/2);
+    leftSiblingNode.nextNode = rightSiblingNode; //TODO chequear los nextNode
+
+    if(leftSiblingRecord != null){
+      leftSiblingRecord.key = node.firstKey();
+    }
+
+    if(rightSiblingRecord != null){
+      rightSiblingRecord.key = node.firstKey();
+    }
+    
+    return nodeRecord;
   }
 
   /// Tries to balance a sequential [node] with its right sibling, using the [capacityCheckFunction].
@@ -509,6 +585,63 @@ class BSharpTree<T extends Comparable<T>> {
       print("fusionando index node ${node.id} con hermano izquierdo ${leftSiblingNode!.id}");
       return _splitSiblingIndexNodes(leftSiblingNode, node, node.getParent()!);
     }
+  }
+
+  /// Balances sequential nodes, taking all the keys from a [node] and its [siblingNode] and 
+  /// redistributing half of the keys on each node
+  /// 
+  /// Lastly, updates the [siblingNode] index record with the new smallest key.
+  void _balanceSequentialNodeWithTwoSiblings(BSharpSequentialNode<T> leftSiblingNode, BSharpSequentialNode<T> centerSiblingNode, BSharpSequentialNode<T> rightSiblingNode) {
+    var centerSiblingRecord = centerSiblingNode.getParent()!.findIndexRecordById(centerSiblingNode.id);
+    var rightSiblingRecord = rightSiblingNode.getParent()!.findIndexRecordById(rightSiblingNode.id);
+    var allKeys = leftSiblingNode.values + centerSiblingNode.values + rightSiblingNode.values;
+    allKeys.sort();
+    leftSiblingNode.values = allKeys.sublist(0, allKeys.length~/3);
+    centerSiblingNode.values = allKeys.sublist(allKeys.length~/3, (allKeys.length*2)~/3);
+    rightSiblingNode.values = allKeys.sublist((allKeys.length*2)~/3);
+
+    if(centerSiblingRecord != null) {
+      centerSiblingRecord.key = centerSiblingNode.firstKey();
+    }
+
+    if(rightSiblingRecord != null) {
+      rightSiblingRecord.key = rightSiblingNode.firstKey();
+    }
+  }
+  
+  bool _tryToBalanceUnderflowedSequentialNodeWithSiblings(BSharpSequentialNode<T> node) {
+    // si el nodo no tiene hermano derecho, tengo que tratar de balancear con su hermano izquierdo
+    // y el izquierdo del izquierdo, si existe
+
+    var rightSiblingNode = node.getRightSibling();
+    if(isOverMinCapacity(rightSiblingNode)){ //Se intenta balancear con el hermano derecho
+      print("balanceando sequential node ${node.id} con hermano derecho ${rightSiblingNode!.id}");
+      _balanceSequentialNodeWithSibling(node, rightSiblingNode);
+      return true;
+    }
+
+    var leftSiblingNode = node.getLeftSibling(); //Se intenta balancear con el hermano izquierdo
+    if(isOverMinCapacity(leftSiblingNode)){
+      print("balanceando sequential node ${node.id} con hermano izquierdo ${leftSiblingNode!.id}");
+      _balanceSequentialNodeWithSibling(leftSiblingNode, node);
+      return true;
+    }
+    
+    //Se trata de balancear entre los hermanos izquierdos (si existen)
+    if(rightSiblingNode == null && leftSiblingNode != null && isOverMinCapacity(leftSiblingNode.getLeftSibling())){
+      print("balanceando sequential node ${node.id} con sus hermanos izquierdos ${leftSiblingNode.id} y ${leftSiblingNode.getLeftSibling()!.id}");
+      _balanceSequentialNodeWithTwoSiblings(leftSiblingNode.getLeftSibling()!, leftSiblingNode, node);
+      return true;
+    }
+
+    //Se trata de balancear entre los hermanos derechos (si existen)
+    if(leftSiblingNode == null && rightSiblingNode != null && isOverMinCapacity(rightSiblingNode.getRightSibling())){
+      print("balanceando sequential node ${node.id} con sus hermanos derechos ${rightSiblingNode.id} y ${rightSiblingNode.getRightSibling()!.id}");
+      _balanceSequentialNodeWithTwoSiblings(node, rightSiblingNode, rightSiblingNode.getRightSibling()!);
+      return true;
+    }
+
+    return false;
   }
 }
 

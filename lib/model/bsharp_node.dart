@@ -1,7 +1,7 @@
 abstract class BSharpNode<T extends Comparable<T>>{
   int id;
   int level;
-  BSharpNode<T>?leftSibling;
+  BSharpNode<T>? leftSibling;
   BSharpNode<T>? rightSibling;
   BSharpNode<T>? parent;
   
