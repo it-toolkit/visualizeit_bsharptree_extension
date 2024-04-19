@@ -17,9 +17,7 @@ class TreeContainer extends StatelessWidget {
       List<Widget> children = mapEntry.value.fold([const Spacer()], (previousValue, widget) => previousValue + ([widget, const Spacer()]));
       rows.addAll([Row(children: children,), const Spacer(), ]);
     }
-    //rows.add(const Row(children: [ Column(children: [TextField(maxLength: 4,)],), Column(), Column()]));
     
-    //rows.add(Container(height: 100, width: 180, child: Row(children: [Container(child:Text("dataasdasd")), Container(child:TextField(maxLength: 4,))],)));
     rows.add(SizedBox(
         height: 50,
         width: 80,

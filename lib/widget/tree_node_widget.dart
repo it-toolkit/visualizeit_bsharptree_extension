@@ -9,7 +9,7 @@ import 'package:widget_arrows/widget_arrows.dart';
 
 class TreeNodeWidget extends StatelessWidget {
 
-  BSharpNode node;
+  final BSharpNode node;
 
   TreeNodeWidget(this.node,{super.key});
 
@@ -26,19 +26,15 @@ class TreeNodeWidget extends StatelessWidget {
       valueNodes.add(const Spacer());
       if(firstValue != null) {
         valueNodes.addAll([
-          //const Spacer(flex: 5,),
-          //nextValues.isNotEmpty ? _boxContainer(firstValue.key.toString())
-              _boxContainer(firstValue.key.toString())
-              .link(nodeId + firstValue.key.toString() + indexNode.leftNode.id.toString(), Alignment.bottomLeft, indexNode.leftNode.id.toString(), Alignment.topCenter, straight: true)
-              .link(nodeId + firstValue.key.toString() + firstValue.rightNode.id.toString(), Alignment.bottomRight, firstValue.rightNode.id.toString(), Alignment.topCenter, straight: true)
-              //: _boxContainer(firstValue.key.toString()),
+          _boxContainer(firstValue.key.toString())
+          .link(nodeId + firstValue.key.toString() + indexNode.leftNode.id.toString(), Alignment.bottomLeft, indexNode.leftNode.id.toString(), Alignment.topCenter, straight: true)
+          .link(nodeId + firstValue.key.toString() + firstValue.rightNode.id.toString(), Alignment.bottomRight, firstValue.rightNode.id.toString(), Alignment.topCenter, straight: true)
         ]);
       }
       
       for (var indexRecord in nextValues) {
         String key = indexRecord.key.toString();
         valueNodes.addAll([
-          //const Spacer(),
           _boxContainer(key)
           .link(nodeId + key + indexRecord.rightNode.id.toString(),  Alignment.bottomRight, indexRecord.rightNode.id.toString(), Alignment.topCenter, straight: true)
         ]);
