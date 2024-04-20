@@ -24,7 +24,12 @@ class _TreeWidgetState extends State<TreeWidget> {
   @override
   void initState() {
     super.initState();
-    _components = <int, List<Widget>>{};
+    _components = createWidgetsFromTree(tree);
+  }
+
+  Map<int, List<Widget>> createWidgetsFromTree(BSharpTree tree) {
+    return tree.getAllNodesByLevel().map((level, listOfNodes) => MapEntry(
+        level, listOfNodes.map((node) => TreeNodeWidget(node)).toList()));
   }
 
   modifyTree(String text) {
@@ -32,9 +37,7 @@ class _TreeWidgetState extends State<TreeWidget> {
     print("se ingreso este valor $text");
     setState(() {
       tree.insert(int.parse(text));
-      var treeNodes = tree.getAllNodesByLevel();
-      _components = treeNodes.map((level, listOfNodes) => MapEntry(
-          level, listOfNodes.map((node) => TreeNodeWidget(node)).toList()));
+      _components = createWidgetsFromTree(tree);
     });
   }
 
@@ -75,8 +78,10 @@ class _TreeWidgetState extends State<TreeWidget> {
         ]));
 
     return ArrowContainer(
-      child:
-          Column(mainAxisAlignment: MainAxisAlignment.center, children: rows),
+      child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: rows),
     );
   }
 }
