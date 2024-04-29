@@ -7,7 +7,8 @@ class Component {
 
   Component(this.id, this.alignment, this.widget);
 }
-class ComponentLayoutDelegate extends MultiChildLayoutDelegate {
+
+/*class ComponentLayoutDelegate extends MultiChildLayoutDelegate {
   ComponentLayoutDelegate({
     required this.components,
   });
@@ -52,4 +53,4 @@ class ComponentLayoutDelegate extends MultiChildLayoutDelegate {
   bool shouldRelayout(ComponentLayoutDelegate oldDelegate) {
     return false;
   }
-}
+}*/

@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
-import 'package:visualizeit_bsharptree_extension/widget/tree_widget.dart';
+import 'package:visualizeit_bsharptree_extension/widget/animation/new_tree_widget.dart';
 
 void main() {
   BSharpTree<num> tree = BSharpTree<num>(3);
@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         body: InteractiveViewer(
           clipBehavior: Clip.none,
-          child: TreeWidget(tree),
+          child: NewTreeWidget(tree),
         ),
       ),
     );
