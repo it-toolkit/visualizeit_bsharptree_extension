@@ -7,7 +7,7 @@ class BSharpTreeBuilderCommand extends ModelBuilderCommand {
   BSharpTreeBuilderCommand(this.treeCapacity);
 
   @override
-  BSharpTreeModel call() {
+  BSharpTreeModel call(CommandContext context) {
     return BSharpTreeModel("", treeCapacity); //TODO para que es el name?
   }
 }

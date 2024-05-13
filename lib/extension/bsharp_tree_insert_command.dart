@@ -12,7 +12,7 @@ class BSharpTreeInsertCommand extends ModelCommand {
       : uuid = const Uuid().v4();
 
   @override
-  Result call(Model model) {
+  Result call(Model model, CommandContext context) {
     BSharpTreeModel treeModel = model as BSharpTreeModel;
 
     int pendingFrames;

@@ -54,4 +54,10 @@ class BSharpTreeModel extends Model {
   bool isInTransition() {
     return _transitions.isNotEmpty;
   }
+
+  @override
+  Model clone() {
+    // TODO: implement clone
+    throw UnimplementedError();
+  }
 }
