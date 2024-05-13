@@ -1,28 +1,27 @@
 import 'package:visualizeit_bsharptree_extension/exception/element_insertion_exception.dart';
 import 'package:visualizeit_bsharptree_extension/exception/element_not_found_exception.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_index_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_sequential_node.dart';
+import 'package:visualizeit_extensions/logging.dart';
 
 class BSharpTree<T extends Comparable<T>> {
-  
   BSharpNode<T>? _rootNode;
   final int maxCapacity;
   int nodesQuantity = 0;
 
+  List<BSharpTreeTransition> transitions = [];
+
+  final logger = Logger("extension.bsharptree.model");
+
   BSharpTree(this.maxCapacity);
 
+  BSharpTree._copy(this._rootNode, this.maxCapacity, this.nodesQuantity);
+
   int get _rootMaxCapacity => (4 * maxCapacity) ~/ 3;
-  int get _minCapacity => (2 * maxCapacity) ~/ 3;
   int get depth => _rootNode?.level ?? 0;
 
-  bool _isNodeOverflowed(BSharpNode<T> node) => node.length() > maxCapacity;
-  bool _hasCapacityLeft(BSharpNode<T>? node) => node!=null && node.length() < maxCapacity;
-
-  bool isNodeUnderflowed(BSharpNode<T> node) => node.length() < _minCapacity;
-  bool isOverMinCapacity(BSharpNode<T>? node) => node != null && node.length() > _minCapacity;
-
-  bool _isRootOverflowed(BSharpNode node) => node.length()  > _rootMaxCapacity;
   bool isRoot(BSharpNode<T> node) => node.id == _rootNode?.id;
 
   /// Inserts a new [value] in the B# tree
@@ -30,64 +29,94 @@ class BSharpTree<T extends Comparable<T>> {
   /// [value] must be of a type [T] that implements [Comparable]
   /// If the tree is empty, creates the root node and then inserts [value]
   /// If the value is already on the tree, it throws an [ElementInsertionException]
-  /// 
+  ///
   /// May cause the B# tree to split nodes or grow on height or width
-  void insert(T value){
-    print("insertando value: $value");
-    if(_rootNode == null){
-      _rootNode = BSharpSequentialNode(nodesQuantity, 0, value);
-      nodesQuantity++;
-      return;
-    }
-
-    if(_rootNode!.isLevelZero){ //el unico nodo del arbol es la raiz
-      var node = _rootNode as BSharpSequentialNode<T>;
-      node.addToNode(value);
-      if(_isRootOverflowed(node)){ //Si se supera la maxima capacidad de la raiz
-        print("spliteando la raíz");
-        var rightNode=BSharpSequentialNode.createNode(nodesQuantity++, 0, node.values.sublist(node.length()~/2));
-        print("creando nodo: ${rightNode.id}");
-        node.values=node.values.sublist(0,node.length()~/2);
-        node.nextNode = rightNode;
-        //Crear el nuevo nodo con la key más chica del derecho
-        var newRoot = BSharpIndexNode<T>(nodesQuantity++, 1, rightNode.values.first, node, rightNode);
-        newRoot.fixFamilyRelations();
-        print("creando nodo: ${newRoot.id}");
-        _rootNode = newRoot;       
-      }
+  void insert(T value) {
+    transitions = [];
+    logger.debug(() => "insertando value: $value");
+    if (_rootNode == null) {
+      _rootNode = BSharpSequentialNode("0-1", 0, _rootMaxCapacity, value);
+      nodesQuantity = 2;
+      transitions.addAll([
+        NodeCreation(targetId: _rootNode!.id),
+        NodeWritten(targetId: _rootNode!.id, transitionTree: this)
+      ]);
     } else {
-      _insertRecursively(_rootNode, null,  value);
+      if (_rootNode!.isLevelZero) {
+        //el unico nodo del arbol es la raiz
+        var node = _rootNode as BSharpSequentialNode<T>;
+        node.addToNode(value);
+        transitions.addAll([
+          NodeRead(targetId: node.id),
+          NodeWritten(targetId: _rootNode!.id, transitionTree: this.clone())
+        ]);
+        if (node.isOverflowed()) {
+          //Si se supera la maxima capacidad de la raiz
+          transitions.add(
+              NodeOverflow(targetId: node.id, transitionTree: this.clone()));
+          var rightNode = BSharpSequentialNode<T>.createNode(
+              (nodesQuantity++).toString(),
+              0,
+              maxCapacity,
+              node.values.sublist(node.length() ~/ 2));
+          var leftNode = BSharpSequentialNode<T>.createNode(
+              (nodesQuantity++).toString(),
+              0,
+              maxCapacity,
+              node.values.sublist(0, node.length() ~/ 2));
+
+          leftNode.nextNode = rightNode;
+          //Crear el nuevo nodo indice raiz que va a reemplazar al nodo secuencia
+          var newRoot = BSharpIndexNode<T>("0-1", 1, _rootMaxCapacity,
+              rightNode.values.first, leftNode, rightNode);
+
+          newRoot.fixFamilyRelations();
+          _rootNode = newRoot;
+          transitions.addAll([
+            NodeCreation(targetId: rightNode.id),
+            NodeCreation(targetId: leftNode.id),
+            NodeWritten(targetId: rightNode.id),
+            NodeWritten(targetId: leftNode.id),
+            NodeWritten(targetId: newRoot.id, transitionTree: this)
+          ]);
+        }
+      } else {
+        _insertRecursively(_rootNode, null, value);
+      }
     }
 
+    logger.debug(() => _printTree());
   }
 
   /// Removes a [value] from the B# tree, if it can be found
   ///
   /// [value] must be of a type [T] that implements [Comparable]
   /// If the value is not found on the tree, it throws an [ElementNotFoundException]
-  /// 
+  ///
   /// May cause the tree to fuse nodes and shrink in height or width
-  void remove(T value){
-    print("eliminando value: $value");
-    if(_rootNode!=null){
+  void remove(T value) {
+    transitions = [];
+    logger.debug(() => "eliminando value: $value");
+    if (_rootNode != null) {
       _removeRecursively(_rootNode!, value);
     }
+    logger.debug(() => _printTree());
   }
 
   /// Prints every sequential node, with their values
-  /// 
+  ///
   /// It traverse all the tree until it founds the smallest value, then uses the pointers to the next node to
   /// print every node id and values
-  void traverse(){
-    if(_rootNode!=null){
+  void traverse() {
+    if (_rootNode != null) {
       //Encontramos el nodo hoja de menores valores (el de mas a la izquierda)
       var node = _rootNode!;
-      while (!node.isLevelZero){
+      while (!node.isLevelZero) {
         node = (node as BSharpIndexNode<T>).leftNode;
       }
       //Recorremos los nodos hoja en forma secuencial
       BSharpSequentialNode<T>? traverseNode = node as BSharpSequentialNode<T>;
-      while (traverseNode!=null){
+      while (traverseNode != null) {
         print("${traverseNode.id}:${traverseNode.values}");
         traverseNode = traverseNode.nextNode;
       }
@@ -96,28 +125,28 @@ class BSharpTree<T extends Comparable<T>> {
     }
   }
 
-  Map<int,List<BSharpNode<T>>> getAllNodesByLevel(){
-    Map<int,List<BSharpNode<T>>> allNodesMap = {};
-    if(_rootNode != null){
-      
+  Map<int, List<BSharpNode<T>>> getAllNodesByLevel() {
+    Map<int, List<BSharpNode<T>>> allNodesMap = {};
+    if (_rootNode != null) {
       //allNodesMap.putIfAbsent(_rootNode!.level, () => [_rootNode!]);
       addNodesByLevelRecursively(allNodesMap, _rootNode!);
     } else {
-      allNodesMap = {0 : List.empty()};
+      allNodesMap = {0: List.empty()};
     }
-    
+
     return allNodesMap;
   }
 
-  void addNodesByLevelRecursively(Map<int,List<BSharpNode<T>>> nodesMap, BSharpNode<T> current){
+  void addNodesByLevelRecursively(
+      Map<int, List<BSharpNode<T>>> nodesMap, BSharpNode<T> current) {
     List<BSharpNode<T>>? nodesList = nodesMap[current.level];
-    if(nodesList != null){
+    if (nodesList != null) {
       nodesList.add(current);
     } else {
-      nodesMap.putIfAbsent(current.level, () => [current] );
+      nodesMap.putIfAbsent(current.level, () => [current]);
     }
     //nodesMap.putIfAbsent(current.level, () => nodesMap[current.level] = );
-    if(!current.isLevelZero){
+    if (!current.isLevelZero) {
       var node = current as BSharpIndexNode<T>;
       addNodesByLevelRecursively(nodesMap, node.leftNode);
       for (var indexRecord in node.rightNodes) {
@@ -125,81 +154,101 @@ class BSharpTree<T extends Comparable<T>> {
       }
     }
   }
-  
+
   /// Inserts recursively a [value] in the B# tree
-  /// 
+  ///
   /// Using the root node as the starting point, finds recursively the correct sequential node to insert the value,
   /// then goes back to update every node necesary in the recursion
   /// If the value is already on the sequential node, it throws a [ElementInsertionException]
-  IndexRecord<T>? _insertRecursively(BSharpNode<T>? current, BSharpIndexNode<T>? parent, T value) {
-    if(current!=null && current.isLevelZero){ // Encontré el nodo secuencial donde deberia insertar
+  IndexRecord<T>? _insertRecursively(
+      BSharpNode<T>? current, BSharpIndexNode<T>? parent, T value) {
+    if (current != null && current.isLevelZero) {
+      // Encontré el nodo secuencial donde deberia insertar
       var node = current as BSharpSequentialNode<T>;
-      if(node.isValueOnNode(value)){
-        throw ElementInsertionException("cant insert the value $value, it's already on the tree");
+      transitions.add(NodeRead(targetId: node.id));
+      logger.debug(() => "nodo ${node.id} es donde se va a insertar el valor");
+      if (node.isValueOnNode(value)) {
+        logger.error(
+            () => "el valor $value ya se encuentra en el nodo ${node.id}");
+        throw ElementInsertionException(
+            "cant insert the value $value, it's already on the tree");
       }
       node.addToNode(value);
-      if(_isNodeOverflowed(node)){ //Si se supera la maxima capacidad del nodo
-        print("Supera la capacidad del nodo al insertar value: $value");
-        if(parent != null){ //TODO creo que parent nunca es null acá porque se eliminó esa posibilidad antes
-          
-          var hasBalancedWithSibling = _tryToBalanceSequentialNodesWithSibling(node, _hasCapacityLeft);
+      transitions
+          .add(NodeWritten(targetId: node.id, transitionTree: this.clone()));
+      if (node.isOverflowed()) {
+        //Si se supera la maxima capacidad del nodo
+        transitions
+            .add(NodeOverflow(targetId: node.id, transitionTree: this.clone()));
 
-          if(!hasBalancedWithSibling){
-            // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
-            // ambos nodos, crear uno nuevo en el medio y repartir las claves en 3
-            return _splitSequentialNodeWithAnySibling(node);
-          }
+        var hasBalancedWithSibling =
+            _tryToBalanceSequentialNodesWithSibling(node);
+
+        if (!hasBalancedWithSibling) {
+          // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
+          // ambos nodos, crear uno nuevo en el medio y repartir las claves en 3
+          return _splitSequentialNodeWithAnySibling(node);
         }
       }
     } else {
       var node = current as BSharpIndexNode<T>;
+      transitions.add(NodeRead(targetId: node.id));
       var nextNode = node.findNextNodeForKey(value);
-      IndexRecord<T>? promotedKey = _insertRecursively(nextNode, current, value);
+      IndexRecord<T>? promotedKey =
+          _insertRecursively(nextNode, current, value);
       //Intento agregar la key en el nodo
-      if(promotedKey!=null){
-        print("key promocionada: ${promotedKey.key}");
+      if (promotedKey != null) {
+        logger.debug(() =>
+            "insertando key promocionada: ${promotedKey.key} en nodo ${node.id}");
         node.addIndexRecordToNode(promotedKey);
         node.fixFamilyRelations();
-        if(_isNodeOverflowed(node)){ //Se supera la maxima capacidad del nodo
-          print("la promoción hace desbordar el nodo indice");
-          
-          if(!isRoot(node)){
-            var hasBalancedWithSibling = _tryToBalanceOverflowedIndexNodeWithSiblings(node);
-            if(!hasBalancedWithSibling){
+        transitions
+            .add(NodeWritten(targetId: node.id, transitionTree: this.clone()));
+        if (node.isOverflowed()) {
+          if (!isRoot(node)) {
+            transitions.add(
+                NodeOverflow(targetId: node.id, transitionTree: this.clone()));
+            var hasBalancedWithSibling =
+                _tryToBalanceOverflowedIndexNodeWithSiblings(node);
+            if (!hasBalancedWithSibling) {
               //no puedo rotar ni a izq ni a derecha, tengo que juntar las claves y dividir el nodo en 3
               return _splitSiblingIndexNodeWithAnySibling(node);
             }
           } else {
             //current es la raiz y tengo que dividirla en dos
-            if(_isRootOverflowed(node)){ //Si se supera la maxima capacidad de la raiz
-              print("el nodo indice es la raíz, hay que realizar un spliteo del nodo raíz");
-              _splitIndexRootNode(node);
-            }
+            transitions.add(
+                NodeOverflow(targetId: node.id, transitionTree: this.clone()));
+            //Si se supera la maxima capacidad de la raiz
+            _splitIndexRootNode(node);
           }
         }
       }
     }
     return null;
   }
+
   /// Removes recursively a [value] in the B# tree
-  /// 
+  ///
   /// Using the root node as the starting point, finds recursively the correct sequential node to remove the value,
   /// then goes back to update every node necesary in the recursion
   /// If the value is not on the sequential node, it throws a [ElementNotFoundException]
-  IndexRecord<T>? _removeRecursively(BSharpNode<T> current, T value){
-    if(current.isLevelZero){
+  IndexRecord<T>? _removeRecursively(BSharpNode<T> current, T value) {
+    if (current.isLevelZero) {
       var node = current as BSharpSequentialNode<T>;
-      if(node.values.contains(value)){
-        print("el valor a remover '$value' se encontró en el nodo con id: ${node.id}");
+      transitions.add(NodeRead(targetId: node.id));
+      if (node.values.contains(value)) {
+        logger.debug(() =>
+            "el valor a remover '$value' se encontró en el nodo con id: ${node.id}");
         node.removeValue(value);
-        if(!isRoot(node) && isNodeUnderflowed(node)){
-          print("el nodo tiene menos valores que la capacidad minima");
-          
-          //var hasBalancedWithSibling = _tryToBalanceSequentialNodesWithSibling(node, isOverMinCapacity);
+        transitions
+            .add(NodeWritten(targetId: node.id, transitionTree: this.clone()));
+        if (!isRoot(node) && node.isUnderflowed()) {
+          transitions.add(
+              NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
+          var hasBalancedWithSibling =
+              _tryToBalanceUnderflowedSequentialNodeWithSiblings(node);
 
-          var hasBalancedWithSibling = _tryToBalanceUnderflowedSequentialNodeWithSiblings(node);
-          
-          if(!hasBalancedWithSibling){
+          if (!hasBalancedWithSibling) {
             // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
             // ambos nodos
             return _fuseSequentialNodeWithAnySibling(node);
@@ -210,27 +259,49 @@ class BSharpTree<T extends Comparable<T>> {
       }
     } else {
       var node = current as BSharpIndexNode<T>;
+      transitions.add(NodeRead(targetId: node.id));
       BSharpNode<T> nextNode = node.findNextNodeForKey(value);
       IndexRecord<T>? indexRecordToUpdate = _removeRecursively(nextNode, value);
 
-      if(indexRecordToUpdate!=null){
-        print("index record a remover con id de rightNode: ${indexRecordToUpdate.rightNode.id}");
-        node.rightNodes.removeWhere((indexRecord) => indexRecord.rightNode.id == indexRecordToUpdate.rightNode.id);
-
-        if(node.parent != null && isNodeUnderflowed(node)){
-          var hasBalancedWithSibling = _tryToBalanceUnderflowedIndexNodeWithSiblings(node);
-          if(!hasBalancedWithSibling){
+      if (indexRecordToUpdate != null) {
+        logger.debug(() =>
+            "index record a remover con id de rightNode: ${indexRecordToUpdate.rightNode.id}");
+        node.rightNodes.removeWhere((indexRecord) =>
+            indexRecord.rightNode.id == indexRecordToUpdate.rightNode.id);
+        if (node.parent != null && node.isUnderflowed()) {
+          transitions.add(
+              NodeWritten(targetId: node.id, transitionTree: this.clone()));
+          transitions.add(
+              NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
+          var hasBalancedWithSibling =
+              _tryToBalanceUnderflowedIndexNodeWithSiblings(node);
+          if (!hasBalancedWithSibling) {
             return _fuseIndexNodesWithAnySibling(node);
           }
         } else {
-          if(node.parent == null && node.length() == 0){
-            _rootNode = node.leftNode;
-            _rootNode!.parent = null;
-            _rootNode!.leftSibling = null;
-            _rootNode!.rightSibling = null;
+          if (node.parent == null && node.length() == 0) {
+            BSharpNode<T> leftChild = node.leftNode;
+            if (node.leftNode.isLevelZero) {
+              leftChild = leftChild as BSharpSequentialNode<T>;
+              _rootNode = BSharpSequentialNode.createNode(
+                  "0-1", 0, _rootMaxCapacity, leftChild.values);
+            } else {
+              leftChild = leftChild as BSharpIndexNode<T>;
+              node.leftNode = leftChild.leftNode;
+              node.rightNodes = leftChild.rightNodes;
+              node.level = node.level - 1;
+              node.fixFamilyRelations();
+            }
+
+            //_rootNode!.parent = null;
+            //_rootNode!.leftSibling = null;
+            //_rootNode!.rightSibling = null;
+            transitions.add(NodeRelease(targetId: leftChild.id));
           } else {
             node.fixFamilyRelations();
           }
+
+          transitions.add(NodeWritten(targetId: node.id, transitionTree: this));
         }
       }
     }
@@ -238,161 +309,239 @@ class BSharpTree<T extends Comparable<T>> {
   }
 
   /// Splits the root [node] (when it's an index node)
-  /// 
+  ///
   /// This method is called when the root is over its max capacity
   /// It takes all the root childrens and creates a new sibling and a new root node. Then it distributes the children between
   /// the new sibling and the former root node.
   void _splitIndexRootNode(BSharpIndexNode<T> node) {
-    var recordToPromote = node.rightNodes.elementAt(node.length()~/2);
-    var newSiblingNode=BSharpIndexNode<T>.createNode(nodesQuantity++, node.level, recordToPromote.rightNode, node.rightNodes.sublist((node.length()~/2)+1));
-    print("creando nodo: ${newSiblingNode.id}");
-    node.rightNodes=node.rightNodes.sublist(0,node.length()~/2);
-    
-    //Crear el nuevo nodo con la key más chica del derecho
-    var bSharpIndexNode = BSharpIndexNode<T>(nodesQuantity++, node.level+1, recordToPromote.key, node, newSiblingNode);
-    print("creando nodo: ${bSharpIndexNode.id}");
+    var recordToPromote = node.rightNodes.elementAt(node.length() ~/ 2);
+    var newLeftNode = BSharpIndexNode<T>.createNode(
+        (nodesQuantity++).toString(),
+        node.level,
+        maxCapacity,
+        node.leftNode,
+        node.rightNodes.sublist(0, node.length() ~/ 2));
+    var newRightNode = BSharpIndexNode<T>.createNode(
+        (nodesQuantity++).toString(),
+        node.level,
+        maxCapacity,
+        recordToPromote.rightNode,
+        node.rightNodes.sublist((node.length() ~/ 2) + 1));
 
-    newSiblingNode.fixFamilyRelations();
+    node.leftNode = newLeftNode;
+    node.rightNodes = [IndexRecord(recordToPromote.key, newRightNode)];
+    node.level += 1;
+
+    newLeftNode.fixFamilyRelations();
+    newRightNode.fixFamilyRelations();
     node.fixFamilyRelations();
-    bSharpIndexNode.fixFamilyRelations();
 
     //Seteamos el nuevo nodo como la raiz
-    _rootNode = bSharpIndexNode;
+    transitions.addAll([
+      NodeCreation(targetId: newRightNode.id),
+      NodeCreation(targetId: newLeftNode.id),
+      NodeWritten(targetId: newRightNode.id),
+      NodeWritten(targetId: newLeftNode.id),
+      NodeWritten(
+          targetId: node.id,
+          transitionTree: this.clone()) //TODO ver si va esto aca
+    ]);
   }
 
   /// Balances index nodes, taking a node (and its children) from the right sibling and adding a node on the left sibling
-  /// 
+  ///
   /// Using the [parent] key and the [rightSiblingNode] left children creates a new [IndexRecord] to add to the left sibling
   /// then removes the first [IndexRecord] of the right sibling, to use its node as the new left children of the node.
   /// Lastly, updates the right sibling index record with the new smallest key.
-  void _balanceIndexNodesRightToLeft(BSharpIndexNode<T> leftSiblingNode, BSharpIndexNode<T> rightSiblingNode, BSharpIndexNode<T> parent) {
-    print("balanceando index nodes de derecha a izquierda con ids: ${leftSiblingNode.id} y ${rightSiblingNode.id}");
+  void _balanceIndexNodesRightToLeft(BSharpIndexNode<T> leftSiblingNode,
+      BSharpIndexNode<T> rightSiblingNode, BSharpIndexNode<T> parent) {
     var rightSiblingRecord = parent.findIndexRecordById(rightSiblingNode.id);
     var smallestRecordFromRight = rightSiblingNode.rightNodes.removeAt(0);
 
-    var newIndexRecord = IndexRecord(rightSiblingRecord!.key, rightSiblingNode.leftNode);
+    var newIndexRecord =
+        IndexRecord(rightSiblingRecord!.key, rightSiblingNode.leftNode);
     leftSiblingNode.addIndexRecordToNode(newIndexRecord);
     rightSiblingNode.leftNode = smallestRecordFromRight.rightNode;
     rightSiblingRecord.key = smallestRecordFromRight.key;
 
     leftSiblingNode.fixFamilyRelations();
     rightSiblingNode.fixFamilyRelations();
+    transitions.addAll([
+      NodeBalancing(
+          targetId: leftSiblingNode.id,
+          firstOptionalTargetId: rightSiblingNode.id,
+          transitionTree: this.clone()),
+      NodeWritten(targetId: leftSiblingNode.id),
+      NodeWritten(targetId: rightSiblingNode.id, transitionTree: this.clone())
+    ]);
   }
 
   /// Balances index nodes, taking a node (and its children) from the left sibling and adding a node on the right sibling
-  /// 
+  ///
   /// Using the [parent] key and the [rightSiblingNode] left children creates a new [IndexRecord] to add to the right sibling
   /// then removes the last [IndexRecord] of the left sibling, to use its node as the new left children of the node.
   /// /// Lastly, updates the right sibling index record with the new smallest key.
-  void _balanceIndexNodesLeftToRight(BSharpIndexNode<T> leftSiblingNode, BSharpIndexNode<T> rightSiblingNode, BSharpIndexNode<T> parent) {
-    print("balanceando index nodes de izq a derecha con ids: ${leftSiblingNode.id} y ${rightSiblingNode.id}");
+  void _balanceIndexNodesLeftToRight(BSharpIndexNode<T> leftSiblingNode,
+      BSharpIndexNode<T> rightSiblingNode, BSharpIndexNode<T> parent) {
     var rightSiblingRecord = parent.findIndexRecordById(rightSiblingNode.id);
     var biggestRecordFromLeft = leftSiblingNode.rightNodes.removeLast();
 
-    var newIndexRecord = IndexRecord(rightSiblingRecord!.key, rightSiblingNode.leftNode);
+    var newIndexRecord =
+        IndexRecord(rightSiblingRecord!.key, rightSiblingNode.leftNode);
     rightSiblingNode.addIndexRecordToNode(newIndexRecord);
-    rightSiblingNode.leftNode=biggestRecordFromLeft.rightNode;
+    rightSiblingNode.leftNode = biggestRecordFromLeft.rightNode;
     rightSiblingRecord.key = biggestRecordFromLeft.key;
-    
+
     leftSiblingNode.fixFamilyRelations();
     rightSiblingNode.fixFamilyRelations();
+
+    transitions.addAll([
+      NodeBalancing(
+          targetId: leftSiblingNode.id,
+          firstOptionalTargetId: rightSiblingNode.id,
+          transitionTree: this.clone()),
+      NodeWritten(targetId: leftSiblingNode.id),
+      NodeWritten(targetId: rightSiblingNode.id, transitionTree: this.clone())
+    ]);
   }
 
   /// Taking all the index records of an index [node] and its [siblingNode], and adding the [IndexRecord] of the siblingNode,
   /// splits these index records in 3 nodes, adding a new node in the middle of [node] and [siblingNode], and promotes
   /// a new [IndexRecord] to be added to the parent node
-  IndexRecord<T> _splitSiblingIndexNodes(BSharpIndexNode<T> node, BSharpIndexNode<T> siblingNode, BSharpIndexNode<T> parent){
+  IndexRecord<T> _splitSiblingIndexNodes(BSharpIndexNode<T> node,
+      BSharpIndexNode<T> siblingNode, BSharpIndexNode<T> parent) {
+    transitions.add(
+        NodeSplit(targetId: node.id, firstOptionalTargetId: siblingNode.id));
     var siblingRecord = parent.findIndexRecordById(siblingNode.id);
     var allIndexRecords = node.rightNodes;
-    var parentIndexRecord = IndexRecord(siblingRecord!.key, siblingNode.leftNode);
+    var parentIndexRecord =
+        IndexRecord(siblingRecord!.key, siblingNode.leftNode);
     allIndexRecords.add(parentIndexRecord);
     allIndexRecords.addAll(siblingNode.rightNodes);
     allIndexRecords.sort((a, b) => a.key.compareTo(b.key));
-    node.rightNodes = allIndexRecords.sublist(0, allIndexRecords.length~/3);
+    node.rightNodes = allIndexRecords.sublist(0, allIndexRecords.length ~/ 3);
 
-    var firstPromotedIndexRecord = allIndexRecords.elementAt(allIndexRecords.length~/3);
+    var firstPromotedIndexRecord =
+        allIndexRecords.elementAt(allIndexRecords.length ~/ 3);
     siblingNode.leftNode = firstPromotedIndexRecord.rightNode;
-    siblingNode.rightNodes = allIndexRecords.sublist((allIndexRecords.length~/3)+1, (allIndexRecords.length*2)~/3);
+    siblingNode.rightNodes = allIndexRecords.sublist(
+        (allIndexRecords.length ~/ 3) + 1, (allIndexRecords.length * 2) ~/ 3);
     siblingRecord.key = firstPromotedIndexRecord.key;
 
-    var secondPromotedIndexRecord = allIndexRecords.elementAt((allIndexRecords.length*2)~/3);    
+    var secondPromotedIndexRecord =
+        allIndexRecords.elementAt((allIndexRecords.length * 2) ~/ 3);
 
-    var newNode = BSharpIndexNode<T>.createNode(nodesQuantity++, node.level, secondPromotedIndexRecord.rightNode, allIndexRecords.sublist(((allIndexRecords.length*2)~/3)+1));
-    print("creando nodo: ${newNode.id}");
-
+    var newNode = BSharpIndexNode<T>.createNode(
+        (nodesQuantity++).toString(),
+        node.level,
+        maxCapacity,
+        secondPromotedIndexRecord.rightNode,
+        allIndexRecords.sublist(((allIndexRecords.length * 2) ~/ 3) + 1));
     node.fixFamilyRelations();
     siblingNode.fixFamilyRelations();
     newNode.fixFamilyRelations();
-    
+
+    transitions.addAll([
+      NodeCreation(targetId: newNode.id),
+      NodeWritten(targetId: newNode.id),
+      NodeWritten(targetId: node.id),
+      NodeWritten(targetId: siblingNode.id, transitionTree: this.clone())
+    ]);
+
     return IndexRecord(secondPromotedIndexRecord.key, newNode);
   }
 
-  /// Balances sequential nodes, taking all the keys from a [node] and its [siblingNode] and 
+  /// Balances sequential nodes, taking all the keys from a [node] and its [siblingNode] and
   /// redistributing half of the keys on each node
-  /// 
+  ///
   /// Lastly, updates the [siblingNode] index record with the new smallest key.
-  void _balanceSequentialNodeWithSibling(BSharpSequentialNode<T> node, BSharpSequentialNode<T> siblingNode) {
+  void _balanceSequentialNodeWithSibling(
+      BSharpSequentialNode<T> node, BSharpSequentialNode<T> siblingNode) {
     var siblingRecord = node.getParent()!.findIndexRecordById(siblingNode.id);
     var allKeys = node.values + siblingNode.values;
     allKeys.sort();
-    node.values = allKeys.sublist(0, allKeys.length~/2);
-    siblingNode.values = allKeys.sublist(allKeys.length~/2);
-    if(siblingRecord != null) {
+    node.values = allKeys.sublist(0, allKeys.length ~/ 2);
+    siblingNode.values = allKeys.sublist(allKeys.length ~/ 2);
+    if (siblingRecord != null) {
       siblingRecord.key = siblingNode.firstKey();
     }
+    transitions.addAll([
+      NodeBalancing(
+          targetId: node.id,
+          firstOptionalTargetId: siblingNode.id,
+          transitionTree: this),
+      NodeWritten(targetId: node.id),
+      NodeWritten(targetId: siblingNode.id, transitionTree: this.clone())
+    ]);
   }
 
-  /// Taking all the keys records of a sequential [node] and its [siblingNode], splits the keys in 3 nodes, 
-  /// adding a new node in the middle of [node] and [siblingNode], and promotes a new [IndexRecord] to be added 
+  /// Taking all the keys records of a sequential [node] and its [siblingNode], splits the keys in 3 nodes,
+  /// adding a new node in the middle of [node] and [siblingNode], and promotes a new [IndexRecord] to be added
   /// to the parent node
-  IndexRecord<T> _splitSiblingSequentialNodes(BSharpSequentialNode<T> node, BSharpSequentialNode<T> siblingNode, BSharpIndexNode<T> parentNode) {
+  IndexRecord<T> _splitSiblingSequentialNodes(BSharpSequentialNode<T> node,
+      BSharpSequentialNode<T> siblingNode, BSharpIndexNode<T> parentNode) {
+    transitions.add(
+        NodeSplit(targetId: node.id, firstOptionalTargetId: siblingNode.id));
     var siblingRecord = parentNode.findIndexRecordById(siblingNode.id);
     var allKeys = node.values + siblingNode.values;
     allKeys.sort();
-    node.values = allKeys.sublist(0, allKeys.length~/3);
-    
-    var newNode = BSharpSequentialNode<T>.createNode(nodesQuantity++, 0, allKeys.sublist(allKeys.length~/3, (allKeys.length*2)~/3));
-    print("creando nodo: ${newNode.id}");
+    node.values = allKeys.sublist(0, allKeys.length ~/ 3);
+
+    var newNode = BSharpSequentialNode<T>.createNode(
+        (nodesQuantity++).toString(),
+        0,
+        maxCapacity,
+        allKeys.sublist(allKeys.length ~/ 3, (allKeys.length * 2) ~/ 3));
+
     newNode.nextNode = siblingNode;
     node.nextNode = newNode;
-    
-    siblingNode.values = allKeys.sublist((allKeys.length*2)~/3);
-    if(siblingRecord != null) {
+
+    siblingNode.values = allKeys.sublist((allKeys.length * 2) ~/ 3);
+    if (siblingRecord != null) {
       siblingRecord.key = siblingNode.firstKey();
     }
+    transitions.addAll([
+      NodeCreation(targetId: newNode.id),
+      NodeWritten(targetId: newNode.id, transitionTree: this.clone())
+    ]); //TODO acá se deberian escribir tambien los otros nodos
     return IndexRecord(newNode.firstKey(), newNode);
   }
 
   /// Prints all the nodes info from the tree, starting from the root
-  void printTree(){
-    if(_rootNode!=null){
+  String _printTree() {
+    if (_rootNode != null) {
       var depth = 0;
-      _printNode(_rootNode!, depth);
+      var buffer = StringBuffer();
+      _printNode(_rootNode!, depth, buffer);
+      return buffer.toString();
     }
+    return "";
   }
 
   /// Prints a single node info and recursively calls itself to print all the children's node info
-  void _printNode(BSharpNode<T> node, int depth){
+  void _printNode(BSharpNode<T> node, int depth, StringBuffer buffer) {
     String padding = "${"--" * depth}>";
     String nodeId = "${node.id}".padRight(2);
-    if(!node.isLevelZero){
+    if (!node.isLevelZero) {
       var indexNode = node as BSharpIndexNode<T>;
-      print("$padding$nodeId: ${indexNode.leftNode.id}|${indexNode.rightNodes} - parent: ${indexNode.getParent()?.id}, leftSibling: ${indexNode.getLeftSibling()?.id}, rightSibling: ${indexNode.getRightSibling()?.id}");
-      _printNode(indexNode.leftNode, ++depth);
+      buffer.writeln(
+          "$padding$nodeId: ${indexNode.leftNode.id}|${indexNode.rightNodes} - parent: ${indexNode.getParent()?.id}, leftSibling: ${indexNode.getLeftSibling()?.id}, rightSibling: ${indexNode.getRightSibling()?.id}");
+      _printNode(indexNode.leftNode, ++depth, buffer);
       for (var e in indexNode.rightNodes) {
-        _printNode(e.rightNode, depth);
+        _printNode(e.rightNode, depth, buffer);
       }
     } else {
       var sequentialNode = node as BSharpSequentialNode<T>;
-      print("$padding$nodeId: ${sequentialNode.values} - parent: ${node.getParent()?.id}, leftSibling: ${node.getLeftSibling()?.id}, rightSibling: ${node.getRightSibling()?.id}");
+      buffer.writeln(
+          "$padding$nodeId: ${sequentialNode.values} - parent: ${node.getParent()?.id}, leftSibling: ${node.getLeftSibling()?.id}, rightSibling: ${node.getRightSibling()?.id}");
     }
   }
-  
+
   /// Fuses the keys of a sequential [node] and its [siblingNode], and sets all the keys in the [node]
-  /// 
+  ///
   /// Returns the [IndexRecord] of the [siblingNode] to be removed from the parent node
-  IndexRecord<T>? _fuseSiblingSequentialNodes(BSharpSequentialNode<T> node, BSharpSequentialNode<T> siblingNode, BSharpIndexNode<T> parent) {
-    print("fusionando nodos con ids: ${node.id} y ${siblingNode.id}");
+  IndexRecord<T>? _fuseSiblingSequentialNodes(BSharpSequentialNode<T> node,
+      BSharpSequentialNode<T> siblingNode, BSharpIndexNode<T> parent) {
     var siblingRecord = parent.findIndexRecordById(siblingNode.id);
     var nodeRecord = parent.findIndexRecordById(node.id);
     var allKeys = node.values + siblingNode.values;
@@ -400,18 +549,24 @@ class BSharpTree<T extends Comparable<T>> {
 
     node.values = allKeys;
     node.nextNode = siblingNode.nextNode;
-    if(nodeRecord != null){
+    if (nodeRecord != null) {
       nodeRecord.key = node.firstKey();
     }
-    
+
+    transitions.addAll([
+      NodeFusion(targetId: node.id, firstOptionalTargetId: siblingNode.id),
+      NodeWritten(targetId: node.id),
+      NodeRelease(targetId: siblingNode.id, transitionTree: this.clone())
+    ]);
+
     return siblingRecord;
   }
-  
+
   /// Fuses the index records of an index [node] and its [siblingNode], and sets all these index records in the [node]
-  /// 
+  ///
   /// Returns the [IndexRecord] of the [siblingNode] to be removed from the parent node
-  IndexRecord<T>? _fuseSiblingIndexNodes(BSharpIndexNode<T> node, BSharpIndexNode<T> siblingNode, BSharpIndexNode<T> parent) {
-    print("fusionando index nodes con ids: ${node.id} y ${siblingNode.id}");
+  IndexRecord<T>? _fuseSiblingIndexNodes(BSharpIndexNode<T> node,
+      BSharpIndexNode<T> siblingNode, BSharpIndexNode<T> parent) {
     var siblingRecord = parent.findIndexRecordById(siblingNode.id);
 
     var newIndexRecord = IndexRecord(siblingRecord!.key, siblingNode.leftNode);
@@ -422,110 +577,167 @@ class BSharpTree<T extends Comparable<T>> {
     }
     node.fixFamilyRelations();
 
+    transitions.addAll([
+      NodeFusion(targetId: node.id, firstOptionalTargetId: siblingNode.id),
+      NodeWritten(targetId: node.id),
+      NodeRelease(targetId: siblingNode.id)
+    ]);
+
     return siblingRecord;
   }
 
   /// Inserts a [listOfValues] into the tree, one by one
   void insertAll(List<T> listOfValues) {
-    print("values to insert: $listOfValues");
+    logger.debug(() => "values to insert: $listOfValues");
     for (var value in listOfValues) {
       insert(value);
     }
+    //logger.debug(() => printTree());
   }
-  
+
   /// Fuse a sequential [node] with its adjacent siblings, splitting the values between the two of them and freeing the node.
   /// If [node] doesn't have a right sibling, it tries to fuse with its left sibling and the left sibling of the left sibling.
   /// If [node] doesn't have a left sibling, it tries to fuse with his right sibling, and the right sibling of the right sibling.
   /// If all of the above fails, it means that the node only has one sibling, and fuses with it
-  IndexRecord<T>? _fuseSequentialNodeWithAnySibling(BSharpSequentialNode<T> node) {
+  IndexRecord<T>? _fuseSequentialNodeWithAnySibling(
+      BSharpSequentialNode<T> node) {
     var rightSiblingNode = node.getRightSibling();
     var leftSiblingNode = node.getLeftSibling();
 
     IndexRecord<T>? indexRecordToUpdate;
 
-    if(rightSiblingNode != null && leftSiblingNode != null){
-      print("fusionando node con hermanos derechos e izquierdo");
-      indexRecordToUpdate = _fuseSequentialNodeWithTwoSiblings(node, leftSiblingNode, rightSiblingNode);
+    if (rightSiblingNode != null && leftSiblingNode != null) {
+      indexRecordToUpdate = _fuseSequentialNodeWithTwoSiblings(
+          node, leftSiblingNode, rightSiblingNode);
       leftSiblingNode.nextNode = rightSiblingNode;
       return indexRecordToUpdate;
     }
 
     // The node is the leftmost node, so you have to fuse with his right sibling, and the right sibling of the right sibling
-    if(leftSiblingNode == null && rightSiblingNode != null && rightSiblingNode.getRightSibling() != null){
-      return _fuseSequentialNodeWithTwoSiblings(node, rightSiblingNode, rightSiblingNode.getRightSibling()!);
+    if (leftSiblingNode == null &&
+        rightSiblingNode != null &&
+        rightSiblingNode.getRightSibling() != null) {
+      return _fuseSequentialNodeWithTwoSiblings(
+          rightSiblingNode, node, rightSiblingNode.getRightSibling()!);
     }
 
     // The node is the rightmost node, so you have to fuse with his left sibling, and the left sibling of the left sibling
-    if(rightSiblingNode == null && leftSiblingNode != null && leftSiblingNode.getLeftSibling() != null){
-      indexRecordToUpdate = _fuseSequentialNodeWithTwoSiblings(node, leftSiblingNode.getLeftSibling()!, leftSiblingNode);
+    if (rightSiblingNode == null &&
+        leftSiblingNode != null &&
+        leftSiblingNode.getLeftSibling() != null) {
+      indexRecordToUpdate = _fuseSequentialNodeWithTwoSiblings(
+          node, leftSiblingNode.getLeftSibling()!, leftSiblingNode);
       leftSiblingNode.nextNode = null;
       return indexRecordToUpdate;
     }
 
-    print("fusionando sequential node con hermano izquierdo");
-    return _fuseSiblingSequentialNodes(node.getLeftSibling()!, node, node.getParent()!);
+    if (node.getRightSibling() != null) {
+      return _fuseSiblingSequentialNodes(
+          node, node.getRightSibling()!, node.getParent()!);
+    } else {
+      return _fuseSiblingSequentialNodes(
+          node.getLeftSibling()!, node, node.getParent()!);
+    }
   }
 
-  IndexRecord<T>? _fuseSequentialNodeWithTwoSiblings(BSharpSequentialNode<T> node, BSharpSequentialNode<T> leftSiblingNode, BSharpSequentialNode<T> rightSiblingNode) {
-    print("fusionando nodos con id: ${node.id} con sus hermanos ${leftSiblingNode.id} y ${rightSiblingNode.id}");
-    var leftSiblingRecord = node.getParent()!.findIndexRecordById(leftSiblingNode.id);
-    var rightSiblingRecord = node.getParent()!.findIndexRecordById(rightSiblingNode.id);
+  IndexRecord<T>? _fuseSequentialNodeWithTwoSiblings(
+      BSharpSequentialNode<T> node,
+      BSharpSequentialNode<T> leftSiblingNode,
+      BSharpSequentialNode<T> rightSiblingNode) {
+    var leftSiblingRecord =
+        node.getParent()!.findIndexRecordById(leftSiblingNode.id);
+    var rightSiblingRecord =
+        node.getParent()!.findIndexRecordById(rightSiblingNode.id);
     var nodeRecord = node.getParent()!.findIndexRecordById(node.id);
-    var allKeys = node.values + leftSiblingNode.values + rightSiblingNode.values;
+    var allKeys =
+        node.values + leftSiblingNode.values + rightSiblingNode.values;
     allKeys.sort();
 
-    leftSiblingNode.values = allKeys.sublist(0, allKeys.length~/2);
-    rightSiblingNode.values = allKeys.sublist(allKeys.length~/2);
+    leftSiblingNode.values = allKeys.sublist(0, allKeys.length ~/ 2);
+    rightSiblingNode.values = allKeys.sublist(allKeys.length ~/ 2);
     leftSiblingNode.nextNode = rightSiblingNode; //TODO chequear los nextNode
 
-    if(leftSiblingRecord != null){
-      leftSiblingRecord.key = node.firstKey();
+    if (leftSiblingRecord != null) {
+      leftSiblingRecord.key = leftSiblingNode.firstKey();
     }
 
-    if(rightSiblingRecord != null){
-      rightSiblingRecord.key = node.firstKey();
+    if (rightSiblingRecord != null) {
+      rightSiblingRecord.key = rightSiblingNode.firstKey();
     }
-    
+
+    /*if (nodeRecord != null) {
+      nodeRecord.key = node.firstKey();
+    }*/
+
+    transitions.addAll([
+      NodeFusion(
+          targetId: node.id,
+          firstOptionalTargetId: leftSiblingNode.id,
+          secondOptionalTargetId: rightSiblingNode.id),
+      NodeWritten(targetId: leftSiblingNode.id),
+      NodeWritten(targetId: rightSiblingNode.id),
+      NodeRelease(
+          targetId: node.id,
+          transitionTree: this.clone()) //TODO CHEQUEAR SI VA ACA
+    ]);
+
     return nodeRecord;
   }
 
   /// Tries to balance a sequential [node] with its right sibling, using the [capacityCheckFunction].
   /// If its unable to do it, then tries the same with the left sibling.
   /// If it was able to balance with any of the siblings, returns true. Otherwise, returns false.
-  bool _tryToBalanceSequentialNodesWithSibling(BSharpSequentialNode<T> node, bool Function(BSharpNode<T>? node) capacityCheckFunction){
+  bool _tryToBalanceSequentialNodesWithSibling(BSharpSequentialNode<T> node) {
     var rightSiblingNode = node.getRightSibling();
-    if(capacityCheckFunction(rightSiblingNode)){ //Se intenta balancear con el hermano derecho
-      print("balanceando sequential node ${node.id} con hermano derecho ${rightSiblingNode!.id}");
-      _balanceSequentialNodeWithSibling(node, rightSiblingNode);
-      return true;
-    }
 
-    var leftSiblingNode = node.getLeftSibling(); //Se intenta balancear con el hermano izquierdo
-    if(capacityCheckFunction(leftSiblingNode)){
-      print("balanceando sequential node ${node.id} con hermano izquierdo ${leftSiblingNode!.id}");
-      _balanceSequentialNodeWithSibling(leftSiblingNode, node);
-      return true;
+    if (rightSiblingNode != null) {
+      transitions.add(NodeRead(targetId: rightSiblingNode.id));
+      //Se intenta balancear con el hermano derecho
+      if (rightSiblingNode.hasCapacityLeft()) {
+        _balanceSequentialNodeWithSibling(node, rightSiblingNode);
+        return true;
+      }
     }
+    logger.debug(() => "no se pudo balancear con hermano derecho");
+
+    var leftSiblingNode =
+        node.getLeftSibling(); //Se intenta balancear con el hermano izquierdo
+    if (leftSiblingNode != null) {
+      transitions.add(NodeRead(targetId: leftSiblingNode.id));
+      if (leftSiblingNode.hasCapacityLeft()) {
+        _balanceSequentialNodeWithSibling(leftSiblingNode, node);
+        return true;
+      }
+    }
+    logger.debug(() => "no se pudo balancear con hermano izquierdo");
     return false;
   }
-  
+
   /// Tries to balance an underflowed index [node] with its right sibling, if it's over its minimum capacity.
   /// If its unable to do it, then tries the same with the left sibling.
   /// If it was able to balance with any of the siblings, returns true. Otherwise, returns false.
   bool _tryToBalanceUnderflowedIndexNodeWithSiblings(BSharpIndexNode<T> node) {
     var rightSiblingNode = node.getRightSibling();
-    if(isOverMinCapacity(rightSiblingNode)){
-      print("balanceando index node con hermano derecho");
-      _balanceIndexNodesRightToLeft(node, rightSiblingNode!, node.getParent()!);
-      return true;
+    if (rightSiblingNode != null) {
+      transitions.add(NodeRead(targetId: rightSiblingNode.id));
+      if (rightSiblingNode.isOverMinCapacity()) {
+        _balanceIndexNodesRightToLeft(
+            node, rightSiblingNode, node.getParent()!);
+        return true;
+      }
     }
+    logger.debug(() => "no se pudo balancear con hermano derecho");
 
     var leftSiblingNode = node.getLeftSibling();
-    if(isOverMinCapacity(leftSiblingNode)){
-      print("balanceando index node con hermano izquierdo");
-      _balanceIndexNodesLeftToRight(leftSiblingNode!, node, node.getParent()!);
-      return true;
+
+    if (leftSiblingNode != null) {
+      transitions.add(NodeRead(targetId: leftSiblingNode.id));
+      if (leftSiblingNode.isOverMinCapacity()) {
+        _balanceIndexNodesLeftToRight(leftSiblingNode, node, node.getParent()!);
+        return true;
+      }
     }
+    logger.debug(() => "no se pudo balancear con hermano izquierdo");
     return false;
   }
 
@@ -534,114 +746,195 @@ class BSharpTree<T extends Comparable<T>> {
   /// If it was able to balance with any of the siblings, returns true. Otherwise, returns false.
   bool _tryToBalanceOverflowedIndexNodeWithSiblings(BSharpIndexNode<T> node) {
     var rightSiblingNode = node.getRightSibling();
-    if(_hasCapacityLeft(rightSiblingNode)){
-      print("balanceando index node con hermano derecho");
-      _balanceIndexNodesLeftToRight(node, rightSiblingNode!, node.getParent()!);
-      return true;
+    if (rightSiblingNode != null) {
+      transitions.add(NodeRead(targetId: rightSiblingNode.id));
+      if (rightSiblingNode.hasCapacityLeft()) {
+        _balanceIndexNodesLeftToRight(
+            node, rightSiblingNode, node.getParent()!);
+        return true;
+      }
     }
+    logger.debug(() => "no se pudo balancear con hermano derecho");
 
     var leftSiblingNode = node.getLeftSibling();
-    if(_hasCapacityLeft(leftSiblingNode)){
-      print("balanceando index node con hermano izquierdo");
-      _balanceIndexNodesRightToLeft(leftSiblingNode!, node, node.getParent()!);
-      return true;
+    if (leftSiblingNode != null) {
+      transitions.add(NodeRead(targetId: leftSiblingNode.id));
+      if (leftSiblingNode.hasCapacityLeft()) {
+        _balanceIndexNodesRightToLeft(leftSiblingNode, node, node.getParent()!);
+        return true;
+      }
     }
+    logger.debug(() => "no se pudo balancear con hermano izquierdo");
     return false;
   }
-  
+
   /// Fuse an index [node] with its right sibling, if it exists.
   /// If it doesn't exist, fuses the left sibling with the [node]
   IndexRecord<T>? _fuseIndexNodesWithAnySibling(BSharpIndexNode<T> node) {
-    if(node.getRightSibling() != null){
-      print("fusionando index node con hermano derecho");
-      return _fuseSiblingIndexNodes(node, node.getRightSibling()!, node.getParent()!);
+    if (node.getRightSibling() != null) {
+      return _fuseSiblingIndexNodes(
+          node, node.getRightSibling()!, node.getParent()!);
     } else {
-      print("fusionando index node con hermano izquierdo");
-      return _fuseSiblingIndexNodes(node.getLeftSibling()!, node, node.getParent()!);
+      return _fuseSiblingIndexNodes(
+          node.getLeftSibling()!, node, node.getParent()!);
     }
   }
-  
+
   /// Splits a sequential [node] with its right sibling, if it exists.
   /// If it doesn't exist, splits the left sibling with the [node]
-  IndexRecord<T>? _splitSequentialNodeWithAnySibling(BSharpSequentialNode<T> node) {
-    if (node.getRightSibling()!=null){
-      print("fusionando a derecha");
-      return _splitSiblingSequentialNodes(node, node.getRightSibling()!, node.getParent()!);
+  IndexRecord<T>? _splitSequentialNodeWithAnySibling(
+      BSharpSequentialNode<T> node) {
+    if (node.getRightSibling() != null) {
+      return _splitSiblingSequentialNodes(
+          node, node.getRightSibling()!, node.getParent()!);
     } else {
-      print("fusionando a izquierda");
-      return _splitSiblingSequentialNodes(node.getLeftSibling()!, node, node.getParent()!);
+      return _splitSiblingSequentialNodes(
+          node.getLeftSibling()!, node, node.getParent()!);
     }
   }
-  
+
   /// Splits an index [node] with its right sibling, if it exists.
   /// If it doesn't exist, splits the left sibling with the [node]
-  IndexRecord<T>? _splitSiblingIndexNodeWithAnySibling(BSharpIndexNode<T> node) {
+  IndexRecord<T>? _splitSiblingIndexNodeWithAnySibling(
+      BSharpIndexNode<T> node) {
     var rightSiblingNode = node.getRightSibling();
-    if(rightSiblingNode!=null){
-      print("fusionando index node ${node.id} con hermano derecho ${rightSiblingNode.id}");
+    if (rightSiblingNode != null) {
       return _splitSiblingIndexNodes(node, rightSiblingNode, node.getParent()!);
     } else {
       var leftSiblingNode = node.getLeftSibling();
-      print("fusionando index node ${node.id} con hermano izquierdo ${leftSiblingNode!.id}");
-      return _splitSiblingIndexNodes(leftSiblingNode, node, node.getParent()!);
+      return _splitSiblingIndexNodes(leftSiblingNode!, node, node.getParent()!);
     }
   }
 
-  /// Balances sequential nodes, taking all the keys from a [node] and its [siblingNode] and 
+  /// Balances sequential nodes, taking all the keys from a [node] and its [siblingNode] and
   /// redistributing half of the keys on each node
-  /// 
+  ///
   /// Lastly, updates the [siblingNode] index record with the new smallest key.
-  void _balanceSequentialNodeWithTwoSiblings(BSharpSequentialNode<T> leftSiblingNode, BSharpSequentialNode<T> centerSiblingNode, BSharpSequentialNode<T> rightSiblingNode) {
-    var centerSiblingRecord = centerSiblingNode.getParent()!.findIndexRecordById(centerSiblingNode.id);
-    var rightSiblingRecord = rightSiblingNode.getParent()!.findIndexRecordById(rightSiblingNode.id);
-    var allKeys = leftSiblingNode.values + centerSiblingNode.values + rightSiblingNode.values;
+  void _balanceSequentialNodeWithTwoSiblings(
+      BSharpSequentialNode<T> leftSiblingNode,
+      BSharpSequentialNode<T> centerSiblingNode,
+      BSharpSequentialNode<T> rightSiblingNode) {
+    var centerSiblingRecord = centerSiblingNode
+        .getParent()!
+        .findIndexRecordById(centerSiblingNode.id);
+    var rightSiblingRecord =
+        rightSiblingNode.getParent()!.findIndexRecordById(rightSiblingNode.id);
+    var allKeys = leftSiblingNode.values +
+        centerSiblingNode.values +
+        rightSiblingNode.values;
     allKeys.sort();
-    leftSiblingNode.values = allKeys.sublist(0, allKeys.length~/3);
-    centerSiblingNode.values = allKeys.sublist(allKeys.length~/3, (allKeys.length*2)~/3);
-    rightSiblingNode.values = allKeys.sublist((allKeys.length*2)~/3);
+    leftSiblingNode.values = allKeys.sublist(0, allKeys.length ~/ 3);
+    centerSiblingNode.values =
+        allKeys.sublist(allKeys.length ~/ 3, (allKeys.length * 2) ~/ 3);
+    rightSiblingNode.values = allKeys.sublist((allKeys.length * 2) ~/ 3);
 
-    if(centerSiblingRecord != null) {
+    if (centerSiblingRecord != null) {
       centerSiblingRecord.key = centerSiblingNode.firstKey();
     }
 
-    if(rightSiblingRecord != null) {
+    if (rightSiblingRecord != null) {
       rightSiblingRecord.key = rightSiblingNode.firstKey();
     }
+
+    transitions.addAll([
+      NodeBalancing(
+          targetId: leftSiblingNode.id,
+          firstOptionalTargetId: centerSiblingNode.id,
+          secondOptionalTargetId: rightSiblingNode.id,
+          transitionTree: this.clone()),
+      NodeWritten(targetId: leftSiblingNode.id),
+      NodeWritten(targetId: centerSiblingNode.id),
+      NodeWritten(targetId: rightSiblingNode.id, transitionTree: this.clone())
+    ]);
   }
-  
-  bool _tryToBalanceUnderflowedSequentialNodeWithSiblings(BSharpSequentialNode<T> node) {
+
+  bool _tryToBalanceUnderflowedSequentialNodeWithSiblings(
+      BSharpSequentialNode<T> node) {
     // si el nodo no tiene hermano derecho, tengo que tratar de balancear con su hermano izquierdo
     // y el izquierdo del izquierdo, si existe
 
     var rightSiblingNode = node.getRightSibling();
-    if(isOverMinCapacity(rightSiblingNode)){ //Se intenta balancear con el hermano derecho
-      print("balanceando sequential node ${node.id} con hermano derecho ${rightSiblingNode!.id}");
-      _balanceSequentialNodeWithSibling(node, rightSiblingNode);
-      return true;
+    if (rightSiblingNode != null) {
+      transitions.add(NodeRead(targetId: rightSiblingNode.id));
+      if (rightSiblingNode.isOverMinCapacity()) {
+        //Se intenta balancear con el hermano derecho
+        _balanceSequentialNodeWithSibling(node, rightSiblingNode);
+        return true;
+      }
+    }
+    logger.debug(() => "no se pudo balancear con hermano derecho");
+
+    var leftSiblingNode =
+        node.getLeftSibling(); //Se intenta balancear con el hermano izquierdo
+    if (leftSiblingNode != null) {
+      transitions.add(NodeRead(targetId: leftSiblingNode.id));
+      if (leftSiblingNode.isOverMinCapacity()) {
+        _balanceSequentialNodeWithSibling(leftSiblingNode, node);
+        return true;
+      }
     }
 
-    var leftSiblingNode = node.getLeftSibling(); //Se intenta balancear con el hermano izquierdo
-    if(isOverMinCapacity(leftSiblingNode)){
-      print("balanceando sequential node ${node.id} con hermano izquierdo ${leftSiblingNode!.id}");
-      _balanceSequentialNodeWithSibling(leftSiblingNode, node);
-      return true;
-    }
-    
+    logger.debug(() => "no se pudo balancear con hermano izquierdo");
+
     //Se trata de balancear entre los hermanos izquierdos (si existen)
-    if(rightSiblingNode == null && leftSiblingNode != null && isOverMinCapacity(leftSiblingNode.getLeftSibling())){
-      print("balanceando sequential node ${node.id} con sus hermanos izquierdos ${leftSiblingNode.id} y ${leftSiblingNode.getLeftSibling()!.id}");
-      _balanceSequentialNodeWithTwoSiblings(leftSiblingNode.getLeftSibling()!, leftSiblingNode, node);
-      return true;
+    if (rightSiblingNode == null &&
+        leftSiblingNode != null &&
+        leftSiblingNode.getLeftSibling() != null) {
+      var leftLeftSibling = leftSiblingNode.getLeftSibling()!;
+      transitions.add(NodeRead(targetId: leftLeftSibling.id));
+      if (leftLeftSibling.isOverMinCapacity()) {
+        _balanceSequentialNodeWithTwoSiblings(
+            leftLeftSibling, leftSiblingNode, node);
+        return true;
+      }
+      logger.debug(
+          () => "no se pudo balancear con hermano izquierdo del izquierdo");
     }
 
     //Se trata de balancear entre los hermanos derechos (si existen)
-    if(leftSiblingNode == null && rightSiblingNode != null && isOverMinCapacity(rightSiblingNode.getRightSibling())){
-      print("balanceando sequential node ${node.id} con sus hermanos derechos ${rightSiblingNode.id} y ${rightSiblingNode.getRightSibling()!.id}");
-      _balanceSequentialNodeWithTwoSiblings(node, rightSiblingNode, rightSiblingNode.getRightSibling()!);
-      return true;
+    if (leftSiblingNode == null &&
+        rightSiblingNode != null &&
+        rightSiblingNode.getRightSibling() != null) {
+      var rightRightSibling = rightSiblingNode.getRightSibling()!;
+      transitions.add(NodeRead(targetId: rightRightSibling.id));
+      if (rightRightSibling.isOverMinCapacity()) {
+        _balanceSequentialNodeWithTwoSiblings(
+            node, rightSiblingNode, rightRightSibling);
+        return true;
+      }
+      logger
+          .debug(() => "no se pudo balancear con hermano derecho del derecho");
     }
 
     return false;
   }
-}
 
+  List<BSharpTreeTransition> getTransitions() {
+    return transitions;
+  }
+
+  BSharpTree<T> clone() {
+    BSharpNode<T>? rootNode;
+    if (_rootNode != null) {
+      rootNode = _cloneRecursively(_rootNode!);
+    }
+
+    return BSharpTree<T>._copy(rootNode, maxCapacity, nodesQuantity);
+  }
+
+  BSharpNode<T> _cloneRecursively(BSharpNode<T> node) {
+    if (!node.isLevelZero) {
+      var indexNode = node as BSharpIndexNode<T>;
+
+      var leftNode = _cloneRecursively(indexNode.leftNode);
+      var rightNodes = indexNode.rightNodes
+          .map((indexRecord) => IndexRecord(
+              indexRecord.key, _cloneRecursively(indexRecord.rightNode)))
+          .toList();
+      return indexNode.copyWith(leftNode: leftNode, rightNodes: rightNodes);
+    } else {
+      var sequentialNode = node as BSharpSequentialNode<T>;
+      return sequentialNode.copy();
+    }
+  }
+}

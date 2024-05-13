@@ -14,7 +14,7 @@ class TreeNodeWidget extends StatelessWidget {
 
   List<Component> buildComponents() {
     final valueNodes = <Widget>[];
-    String nodeId = node.id.toString();
+    String nodeId = node.id;
     if (node is BSharpIndexNode) {
       var indexNode = node as BSharpIndexNode;
       final firstValue = indexNode.rightNodes.firstOrNull;
@@ -28,19 +28,15 @@ class TreeNodeWidget extends StatelessWidget {
         valueNodes.addAll([
           _boxContainer(firstValue.key.toString())
               .link(
-                  nodeId +
-                      firstValue.key.toString() +
-                      indexNode.leftNode.id.toString(),
+                  nodeId + firstValue.key.toString() + indexNode.leftNode.id,
                   Alignment.bottomLeft,
-                  indexNode.leftNode.id.toString(),
+                  indexNode.leftNode.id,
                   Alignment.topCenter,
                   straight: true)
               .link(
-                  nodeId +
-                      firstValue.key.toString() +
-                      firstValue.rightNode.id.toString(),
+                  nodeId + firstValue.key.toString() + firstValue.rightNode.id,
                   Alignment.bottomRight,
-                  firstValue.rightNode.id.toString(),
+                  firstValue.rightNode.id,
                   Alignment.topCenter,
                   straight: true),
         ]);
@@ -50,9 +46,9 @@ class TreeNodeWidget extends StatelessWidget {
         String key = indexRecord.key.toString();
         valueNodes.addAll([
           _boxContainer(key).link(
-              nodeId + key + indexRecord.rightNode.id.toString(),
+              nodeId + key + indexRecord.rightNode.id,
               Alignment.bottomRight,
-              indexRecord.rightNode.id.toString(),
+              indexRecord.rightNode.id,
               Alignment.topCenter,
               straight: true)
         ]);
@@ -103,7 +99,7 @@ class TreeNodeWidget extends StatelessWidget {
     final List<Component> components = buildComponents();
 
     return ArrowElement(
-        id: node.id.toString(),
+        id: node.id,
         child: Container(
             width: max(50, 20 + node.length() * 35),
             height: 65,
