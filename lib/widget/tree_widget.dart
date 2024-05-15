@@ -10,21 +10,19 @@ class TreeWidget extends StatefulWidget {
 
   @override
   State<TreeWidget> createState() {
-    return _TreeWidgetState(tree);
+    return _TreeWidgetState();
   }
 }
 
 class _TreeWidgetState extends State<TreeWidget> {
-  BSharpTree tree;
-
   Map<int, List<Widget>>? _components;
 
-  _TreeWidgetState(this.tree);
+  _TreeWidgetState();
 
   @override
   void initState() {
     super.initState();
-    _components = createWidgetsFromTree(tree);
+    _components = createWidgetsFromTree(widget.tree);
   }
 
   Map<int, List<Widget>> createWidgetsFromTree(BSharpTree tree) {
@@ -36,8 +34,8 @@ class _TreeWidgetState extends State<TreeWidget> {
     //Este metodo deberia pasarselo al tree container para agregarlo al
     print("se ingreso este valor $text");
     setState(() {
-      tree.insert(int.parse(text));
-      _components = createWidgetsFromTree(tree);
+      widget.tree.insert(int.parse(text));
+      _components = createWidgetsFromTree(widget.tree);
     });
   }
 

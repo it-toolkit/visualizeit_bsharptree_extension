@@ -6,13 +6,13 @@ import 'package:visualizeit_bsharptree_extension/widget/tree_widget.dart';
 
 void main() {
   BSharpTree<num> tree = BSharpTree<num>(2);
-  /*Random random = Random();
+  Random random = Random();
   Set<int> setOfInts = {};
-  while (setOfInts.length < 45) {
+  while (setOfInts.length < 20) {
     setOfInts.add(random.nextInt(1000));
   }
 
-  tree.insertAll(setOfInts.toList());*/
+  tree.insertAll(setOfInts.toList());
 
   runApp(MyApp(tree));
 }
