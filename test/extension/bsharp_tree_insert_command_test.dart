@@ -2,12 +2,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_insert_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_model.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:visualizeit_extensions/common.dart';
 
 class BSharpTreeModelMock extends Mock implements BSharpTreeModel {}
+
+class CommandContextMock extends Mock implements CommandContext {}
 
 void main() {
   var treeModelMock = BSharpTreeModelMock();
   var resultTreeModelMock = BSharpTreeModelMock();
+  var commandContextMock = CommandContextMock();
 
   tearDown(() => reset(treeModelMock));
 
@@ -23,7 +27,7 @@ void main() {
         .thenReturn((0, resultTreeModelMock));
     var command = BSharpTreeInsertCommand(10, "modelName");
 
-    var commandResult = command.call(treeModelMock);
+    var commandResult = command.call(treeModelMock, commandContextMock);
 
     expect(commandResult.finished, isTrue);
     expect(commandResult.model,
@@ -35,7 +39,7 @@ void main() {
         .thenReturn((4, resultTreeModelMock));
     var command = BSharpTreeInsertCommand(10, "modelName");
 
-    var commandResult = command.call(treeModelMock);
+    var commandResult = command.call(treeModelMock, commandContextMock);
 
     expect(commandResult.finished, isFalse);
     expect(commandResult.model,

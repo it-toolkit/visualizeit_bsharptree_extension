@@ -1,9 +1,9 @@
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_extension.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_extensions/common.dart';
 
 class BSharpTreeModel extends Model {
-  static const String BSharpTreeExtensionId = "BSharpTree";
   BSharpTree _currentTree;
   List<BSharpTreeTransition> _transitions = [];
   int _currentFrame = 0;
@@ -12,9 +12,13 @@ class BSharpTreeModel extends Model {
   BSharpTree get currentTree => _currentTree;
   int get _pendingFrames => _transitions.length - _currentFrame - 1;
 
-  BSharpTreeModel(name, treeCapacity)
+  BSharpTreeModel(String name, int treeCapacity, List<int> initialValues)
       : _currentTree = BSharpTree<num>(treeCapacity),
-        super(BSharpTreeExtensionId, name);
+        super(BSharpTreeExtension.extensionId, name) {
+    _currentTree.insertAll(initialValues);
+  }
+  /*   : _currentTree = BSharpTree<num>(treeCapacity),
+        super(BSharpTreeExtension.extensionId, name);*/
 
   (int, Model) executeInsertion(String uuid, num value) {
     if (_canExecuteCommand(uuid)) {
@@ -57,7 +61,6 @@ class BSharpTreeModel extends Model {
 
   @override
   Model clone() {
-    // TODO: implement clone
-    throw UnimplementedError();
+    return this;
   }
 }

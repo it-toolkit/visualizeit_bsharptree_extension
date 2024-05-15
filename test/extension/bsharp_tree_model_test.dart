@@ -7,9 +7,9 @@ import 'package:visualizeit_extensions/common.dart';
 class BSharpTreeMock extends Mock implements BSharpTree<num> {}
 
 void main() {
-  test("model creation", () {
+  test("model empty creation", () {
     int treeCapacity = 3;
-    BSharpTreeModel model = BSharpTreeModel("name", treeCapacity);
+    BSharpTreeModel model = BSharpTreeModel("name", treeCapacity, []);
 
     expect(
       model.currentTree,
@@ -20,11 +20,24 @@ void main() {
     expect(model.currentTree.nodesQuantity, 0);
   });
 
+  test("model creation with initial values", () {
+    int treeCapacity = 3;
+    BSharpTreeModel model = BSharpTreeModel("name", treeCapacity, [3, 7, 15]);
+
+    expect(
+      model.currentTree,
+      isA<BSharpTree<num>>(),
+    );
+    expect(model.name, equals("name"));
+    expect(model.currentTree.maxCapacity, treeCapacity);
+    expect(model.currentTree.nodesQuantity, 1);
+  });
+
   group("insert command execution", () {
     test("execute without transitions", () {
       int treeCapacity = 3;
       int valueToInsert = 10;
-      BSharpTreeModel model = BSharpTreeModel("name", treeCapacity);
+      BSharpTreeModel model = BSharpTreeModel("name", treeCapacity, []);
 
       int pendingFrames;
       Model modelAfterExecution;
@@ -38,8 +51,8 @@ void main() {
     test("execute with transitions", () {
       int treeCapacity = 3;
       int valueToInsert = 10;
-      BSharpTreeModel model = BSharpTreeModel("name", treeCapacity);
-      model.currentTree.insertAll([3, 6, 9, 12].toList());
+      BSharpTreeModel model =
+          BSharpTreeModel("name", treeCapacity, [3, 6, 9, 12]);
 
       int pendingFrames;
       Model modelAfterExecution;
@@ -56,8 +69,9 @@ void main() {
       int treeCapacity = 3;
       int valueToInsert = 10;
       int anotherValueToInsert = 25;
-      BSharpTreeModel model = BSharpTreeModel("name", treeCapacity);
-      model.currentTree.insertAll([3, 6, 9, 12].toList());
+      BSharpTreeModel model =
+          BSharpTreeModel("name", treeCapacity, [3, 6, 9, 12]);
+      //model.currentTree.insertAll([3, 6, 9, 12].toList());
 
       int pendingFrames;
       BSharpTreeModel modelAfterExecution;
@@ -74,8 +88,9 @@ void main() {
     test("execute until transitions are over", () {
       int treeCapacity = 3;
       int valueToInsert = 10;
-      BSharpTreeModel model = BSharpTreeModel("name", treeCapacity);
-      model.currentTree.insertAll([3, 6, 9, 12].toList());
+      BSharpTreeModel model =
+          BSharpTreeModel("name", treeCapacity, [3, 6, 9, 12]);
+      //model.currentTree.insertAll([3, 6, 9, 12].toList());
 
       int pendingFrames;
       Model modelAfterExecution;
