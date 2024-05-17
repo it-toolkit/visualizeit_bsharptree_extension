@@ -28,7 +28,7 @@ class BSharpTreeInsertCommand extends ModelCommand {
     BSharpTreeModel treeModel = model as BSharpTreeModel;
 
     int pendingFrames;
-    Model resultModel;
+    Model? resultModel;
 
     (pendingFrames, resultModel) = treeModel.executeInsertion(uuid, value);
 

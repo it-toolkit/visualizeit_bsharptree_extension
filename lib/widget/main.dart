@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         body: InteractiveViewer(
           clipBehavior: Clip.none,
-          child: TreeWidget(tree),
+          child: TreeWidget(tree, null),
         ),
       ),
     );

@@ -10,7 +10,7 @@ import 'package:widget_arrows/widget_arrows.dart';
 class TreeNodeWidget extends StatelessWidget {
   final BSharpNode node;
 
-  TreeNodeWidget(this.node, {super.key});
+  const TreeNodeWidget(this.node, {super.key});
 
   List<Component> buildComponents() {
     final valueNodes = <Widget>[];

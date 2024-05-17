@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_bsharptree_extension/widget/tree_node_widget.dart';
 import 'package:widget_arrows/widget_arrows.dart';
 
 class TreeWidget extends StatefulWidget {
-  BSharpTree tree;
+  final BSharpTree tree;
+  final BSharpTreeTransition? currentTransition;
 
-  TreeWidget(this.tree, {super.key});
+  const TreeWidget(this.tree, this.currentTransition, {super.key});
 
   @override
   State<TreeWidget> createState() {

@@ -937,4 +937,13 @@ class BSharpTree<T extends Comparable<T>> {
       return sequentialNode.copy();
     }
   }
+
+  /*Map toJson() {
+    Map rootNodeMap = _rootNode != null ? _rootNode!.toJson() : null;
+    return {
+      'maxCapacity': maxCapacity,
+      'nodesQuantity': nodesQuantity,
+      'rootNode': rootNodeMap
+    };
+  }*/
 }

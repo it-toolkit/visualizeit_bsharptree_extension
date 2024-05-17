@@ -4,21 +4,25 @@ import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_extensions/common.dart';
 
 class BSharpTreeModel extends Model {
-  BSharpTree _currentTree;
+  final BSharpTree _baseTree;
+  BSharpTree? _lastTransitionTree;
   List<BSharpTreeTransition> _transitions = [];
   int _currentFrame = 0;
   String _currentUuid = "";
 
-  BSharpTree get currentTree => _currentTree;
+  BSharpTree? get currentTree => _transitions.isEmpty
+      ? _lastTransitionTree
+      : _transitions[_currentFrame].transitionTree ?? _lastTransitionTree;
+  BSharpTreeTransition? get currentTransition =>
+      _transitions.isNotEmpty ? _transitions[_currentFrame] : null;
   int get _pendingFrames => _transitions.length - _currentFrame - 1;
 
   BSharpTreeModel(String name, int treeCapacity, List<int> initialValues)
-      : _currentTree = BSharpTree<num>(treeCapacity),
+      : _baseTree = BSharpTree<num>(treeCapacity),
         super(BSharpTreeExtension.extensionId, name) {
-    _currentTree.insertAll(initialValues);
+    _baseTree.insertAll(initialValues);
+    _lastTransitionTree = _baseTree;
   }
-  /*   : _currentTree = BSharpTree<num>(treeCapacity),
-        super(BSharpTreeExtension.extensionId, name);*/
 
   (int, Model) executeInsertion(String uuid, num value) {
     if (_canExecuteCommand(uuid)) {
@@ -26,7 +30,7 @@ class BSharpTreeModel extends Model {
         //El arbol está en transicion
         _currentFrame++;
         if (_transitions[_currentFrame].hasTree()) {
-          _currentTree = _transitions[_currentFrame].transitionTree!;
+          _lastTransitionTree = _transitions[_currentFrame].transitionTree!;
         }
         if (_currentFrame == _transitions.length - 1) {
           //finaliza la transicion
@@ -37,11 +41,12 @@ class BSharpTreeModel extends Model {
         }
       } else {
         //Arranca una transición
+        _lastTransitionTree = _baseTree.clone();
         _currentUuid = uuid;
-        _currentTree.insert(value);
-        _transitions = _currentTree.getTransitions();
-        if (_transitions.firstOrNull != null) {
-          _currentTree = _transitions.first.transitionTree!;
+        _baseTree.insert(value);
+        _transitions = _baseTree.getTransitions();
+        if (_transitions.firstOrNull?.transitionTree != null) {
+          _lastTransitionTree = _transitions.first.transitionTree;
         }
       }
       return (_pendingFrames, this);

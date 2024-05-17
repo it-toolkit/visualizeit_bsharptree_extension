@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_builder_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_insert_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_model.dart';
@@ -67,7 +68,7 @@ class BSharpTreeExtension implements ScriptingExtension, VisualizerExtension {
   Widget? render(Model model, BuildContext context) {
     //TODO logica de elección de arbol a retornar
     if (model is BSharpTreeModel) {
-      return TreeWidget(model.currentTree);
+      return TreeWidget(model.currentTree!, model.currentTransition);
     } else {
       return null;
     }
