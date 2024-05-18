@@ -38,9 +38,6 @@ linux/flutter/generated_plugin_registrant.cc
 linux/flutter/generated_plugin_registrant.h
 linux/flutter/generated_plugins.cmake
 macos/Flutter/GeneratedPluginRegistrant.swift
-test/extension/bsharp_tree_builder_command_test.dart
-test/extension/bsharp_tree_model_test.dart
-test/integration/bsharp_tree_extension_test.dart
 windows/flutter/generated_plugin_registrant.cc
 windows/flutter/generated_plugin_registrant.h
 windows/flutter/generated_plugins.cmake
