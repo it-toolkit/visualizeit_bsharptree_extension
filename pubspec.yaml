@@ -31,14 +31,15 @@ dependencies:
   flutter:
     sdk: flutter
 
+  visualizeit_extensions:
+    git: #Read only token for extensions.. Change to public URL when available
+      url: https://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@github.com/it-toolkit/visualizeit_extensions.git
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
   go_router: ^13.1.0
   flutter_markdown: ^0.6.18+2
-  visualizeit_extensions:
-    path: ../visualizeit_extensions
   yaml: ^3.1.2
   mocktail: ^1.0.3
   flutter_bloc: ^8.1.4

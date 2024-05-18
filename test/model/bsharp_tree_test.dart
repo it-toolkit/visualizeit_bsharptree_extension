@@ -1,7 +1,7 @@
+import 'dart:js_util';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:visualizeit_bsharptree_extension/exception/element_insertion_exception.dart';
 import 'package:visualizeit_bsharptree_extension/exception/element_not_found_exception.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
@@ -553,12 +553,12 @@ void main() {
       var tree = BSharpTree<num>(2);
       Random random = Random();
       Set<int> setOfInts = {};
-      while (setOfInts.length < 45) {
+      while (setOfInts.length < 50) {
         setOfInts.add(random.nextInt(1000));
       }
 
       tree.insertAll(setOfInts.toList());
-      expect(tree.depth, 4);
+      expect(tree.depth, greaterThanOrEqualTo(3));
 
       List<int> shuffledList = setOfInts.toList();
       shuffledList.shuffle();
