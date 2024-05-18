@@ -15,8 +15,8 @@ void main() {
     expect(model.extensionId, BSharpTreeExtension.extensionId);
     expect(model.name,
         ""); //TODO arreglar este test cuando entienda que es el name
-    expect(model.currentTree.maxCapacity, 3);
-    expect(model.currentTree.nodesQuantity, 0);
-    expect(model.currentTree.depth, 0);
+    expect(model.currentTree!.maxCapacity, 3);
+    expect(model.currentTree!.nodesQuantity, 0);
+    expect(model.currentTree!.depth, 0);
   });
 }

@@ -16,8 +16,8 @@ void main() {
       isA<BSharpTree<num>>(),
     );
     expect(model.name, equals("name"));
-    expect(model.currentTree.maxCapacity, treeCapacity);
-    expect(model.currentTree.nodesQuantity, 0);
+    expect(model.currentTree!.maxCapacity, treeCapacity);
+    expect(model.currentTree!.nodesQuantity, 0);
   });
 
   test("model creation with initial values", () {
@@ -29,8 +29,8 @@ void main() {
       isA<BSharpTree<num>>(),
     );
     expect(model.name, equals("name"));
-    expect(model.currentTree.maxCapacity, treeCapacity);
-    expect(model.currentTree.nodesQuantity, 1);
+    expect(model.currentTree!.maxCapacity, treeCapacity);
+    expect(model.currentTree!.nodesQuantity, 2);
   });
 
   group("insert command execution", () {
@@ -44,7 +44,7 @@ void main() {
       (pendingFrames, modelAfterExecution) =
           model.executeInsertion("uuid", valueToInsert);
 
-      expect(pendingFrames, 0);
+      expect(pendingFrames, 1);
       expect(modelAfterExecution, isA<BSharpTreeModel>());
     });
 
@@ -61,8 +61,9 @@ void main() {
 
       expect(pendingFrames, greaterThan(0));
       expect(modelAfterExecution, isA<BSharpTreeModel>());
-      expect((modelAfterExecution as BSharpTreeModel).currentTree.nodesQuantity,
-          1);
+      expect(
+          (modelAfterExecution as BSharpTreeModel).currentTree!.nodesQuantity,
+          2);
     });
 
     test("try to execute while in transition", () {
@@ -71,7 +72,6 @@ void main() {
       int anotherValueToInsert = 25;
       BSharpTreeModel model =
           BSharpTreeModel("name", treeCapacity, [3, 6, 9, 12]);
-      //model.currentTree.insertAll([3, 6, 9, 12].toList());
 
       int pendingFrames;
       BSharpTreeModel modelAfterExecution;
@@ -90,7 +90,6 @@ void main() {
       int valueToInsert = 10;
       BSharpTreeModel model =
           BSharpTreeModel("name", treeCapacity, [3, 6, 9, 12]);
-      //model.currentTree.insertAll([3, 6, 9, 12].toList());
 
       int pendingFrames;
       Model modelAfterExecution;
