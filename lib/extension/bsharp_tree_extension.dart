@@ -32,10 +32,19 @@ class BSharpTreeExtensionBuilder implements ExtensionBuilder {
   }
 }
 
-class BSharpTreeExtension implements ScriptingExtension, VisualizerExtension {
+class BSharpTreeExtension extends DefaultScriptingExtension
+    implements ScriptingExtension, VisualizerExtension {
   static const extensionId = "bsharp-tree-extension";
 
-  @override
+  BSharpTreeExtension()
+      : super({
+          BSharpTreeBuilderCommand.commandDefinition:
+              BSharpTreeBuilderCommand.build,
+          BSharpTreeInsertCommand.commandDefinition:
+              BSharpTreeInsertCommand.build
+        });
+
+  /*@override
   Command? buildCommand(RawCommand rawCommand) {
     var maybeCommand = getAllCommandDefinitions()
         .firstWhereOrNull((commandDef) => commandDef.name == rawCommand.name);
@@ -61,11 +70,10 @@ class BSharpTreeExtension implements ScriptingExtension, VisualizerExtension {
       BSharpTreeBuilderCommand.commandDefinition,
       BSharpTreeInsertCommand.commandDefinition
     ];
-  }
+  }*/
 
   @override
   Widget? render(Model model, BuildContext context) {
-    //TODO logica de elección de arbol a retornar
     if (model is BSharpTreeModel) {
       return TreeWidget(model.currentTree!, model.currentTransition);
     } else {
