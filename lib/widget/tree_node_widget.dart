@@ -109,7 +109,9 @@ class TreeNodeWidget extends StatelessWidget {
             height: 65,
             decoration: BoxDecoration(
                 border: Border.all(
-                    color: isRead || isWritten ? Colors.red : Colors.black),
+                    width: isRead || isWritten ? 2 : 1,
+                    color: isRead || isWritten ? Colors.blue : Colors.black,
+                    strokeAlign: BorderSide.strokeAlignOutside),
                 color: Colors.white,
                 borderRadius: const BorderRadius.all(Radius.circular(10)),
                 boxShadow: const [
@@ -141,9 +143,9 @@ class TreeNodeWidget extends StatelessWidget {
                 fit: BoxFit.fitWidth,
                 alignment: Alignment.bottomCenter,
                 child: Text(
-                  "${isRead ? "Read" : ""}${isWritten ? "Written" : ""}",
+                  "${isRead ? "Leido" : ""}${isWritten ? "Escrito" : ""}",
                   style: const TextStyle(
-                      color: Colors.red, backgroundColor: Colors.white),
+                      color: Colors.blue, backgroundColor: Colors.white),
                 ),
               ),
             ),

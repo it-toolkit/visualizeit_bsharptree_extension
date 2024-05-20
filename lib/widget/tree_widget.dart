@@ -74,11 +74,91 @@ class _TreeWidgetState extends State<TreeWidget> {
       rows.addAll([Row(children: children), const Spacer()]);
     }
 
+    rows.add(Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 165,
+          height: 65,
+          margin: const EdgeInsets.only(right: 2, bottom: 2),
+          decoration: BoxDecoration(
+              border: Border.all(color: Colors.black),
+              color: Colors.white,
+              borderRadius: const BorderRadius.all(Radius.circular(10)),
+              boxShadow: const [
+                BoxShadow(blurRadius: 5),
+              ]),
+          child: Column(
+            children: [
+              buildColorReferenceRow(
+                  Colors.cyan, "Nodo con capacidad disponible"),
+              buildColorReferenceRow(
+                  Colors.yellow, "Nodo al limite de capacidad"),
+              buildColorReferenceRow(
+                  Colors.red, "Nodo en Overflow / Underflow"),
+            ],
+          ),
+        ),
+      ],
+    ));
+
     return ArrowContainer(
       child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: rows),
     );
+  }
+
+  Row buildColorReferenceRow(Color color, final String text) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        CustomPaint(
+          size: const Size(10, 10),
+          painter: CirclePainter(color),
+        ),
+        SizedBox(
+          width: 138,
+          height: 20,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              text,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class CirclePainter extends CustomPainter {
+  Color color;
+  CirclePainter(this.color);
+
+  /*@override
+  void paint(Canvas canvas, Size size) {
+    Paint paint = Paint();
+    paint.strokeWidth = 2;
+    paint.color = color;
+    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 6, paint);
+  }*/
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint paint = Paint();
+    paint.strokeWidth = 2;
+    paint.color = color;
+    canvas.drawRRect(
+        RRect.fromLTRBR(
+            0, 0, size.height, size.width, const Radius.circular(3)),
+        paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return false;
   }
 }

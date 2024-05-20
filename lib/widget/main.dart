@@ -9,7 +9,7 @@ void main() {
   BSharpTree<num> tree = BSharpTree<num>(3);
   Random random = Random();
   Set<int> setOfInts = {};
-  while (setOfInts.length < 8) {
+  while (setOfInts.length < 80) {
     setOfInts.add(random.nextInt(1000));
   }
 
