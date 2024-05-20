@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_builder_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_insert_command.dart';
@@ -43,34 +42,6 @@ class BSharpTreeExtension extends DefaultScriptingExtension
           BSharpTreeInsertCommand.commandDefinition:
               BSharpTreeInsertCommand.build
         });
-
-  /*@override
-  Command? buildCommand(RawCommand rawCommand) {
-    var maybeCommand = getAllCommandDefinitions()
-        .firstWhereOrNull((commandDef) => commandDef.name == rawCommand.name);
-    if (maybeCommand == null) {
-      return null;
-    } else {
-      if (maybeCommand.name ==
-          BSharpTreeBuilderCommand.commandDefinition.name) {
-        return BSharpTreeBuilderCommand.build(rawCommand);
-      } else if (maybeCommand.name ==
-          BSharpTreeInsertCommand.commandDefinition.name) {
-        return BSharpTreeInsertCommand.build(rawCommand);
-      } else {
-        return null; // TODO mas comandos
-      }
-    }
-  }
-
-  @override
-  List<CommandDefinition> getAllCommandDefinitions() {
-    _logger.trace(() => "Getting B# tree extension command definitions");
-    return [
-      BSharpTreeBuilderCommand.commandDefinition,
-      BSharpTreeInsertCommand.commandDefinition
-    ];
-  }*/
 
   @override
   Widget? render(Model model, BuildContext context) {
