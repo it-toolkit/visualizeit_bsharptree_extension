@@ -1,14 +1,15 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_bsharptree_extension/widget/tree_widget.dart';
 
 void main() {
-  BSharpTree<num> tree = BSharpTree<num>(2);
+  BSharpTree<num> tree = BSharpTree<num>(3);
   Random random = Random();
   Set<int> setOfInts = {};
-  while (setOfInts.length < 20) {
+  while (setOfInts.length < 8) {
     setOfInts.add(random.nextInt(1000));
   }
 
@@ -33,7 +34,7 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         body: InteractiveViewer(
           clipBehavior: Clip.none,
-          child: TreeWidget(tree, null),
+          child: TreeWidget(tree, NodeRead(targetId: "2")),
         ),
       ),
     );

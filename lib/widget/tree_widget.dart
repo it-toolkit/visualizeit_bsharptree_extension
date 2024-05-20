@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
+import 'package:visualizeit_bsharptree_extension/model/bsharp_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_bsharptree_extension/widget/tree_node_widget.dart';
 import 'package:widget_arrows/widget_arrows.dart';
@@ -24,28 +25,47 @@ class _TreeWidgetState extends State<TreeWidget> {
   @override
   void initState() {
     super.initState();
-    _components = createWidgetsFromTree(widget.tree);
+    _components = createWidgetsFromTree();
   }
 
-  Map<int, List<Widget>> createWidgetsFromTree(BSharpTree tree) {
-    return tree.getAllNodesByLevel().map((level, listOfNodes) => MapEntry(
-        level, listOfNodes.map((node) => TreeNodeWidget(node)).toList()));
+  Map<int, List<Widget>> createWidgetsFromTree() {
+    return widget.tree.getAllNodesByLevel().map((level, listOfNodes) =>
+        MapEntry(
+            level,
+            listOfNodes
+                .map((node) => createNodeWithTransition(node))
+                .toList()));
   }
 
-  modifyTree(String text) {
-    //Este metodo deberia pasarselo al tree container para agregarlo al
-    print("se ingreso este valor $text");
-    setState(() {
-      widget.tree.insert(int.parse(text));
-      _components = createWidgetsFromTree(widget.tree);
-    });
+  TreeNodeWidget createNodeWithTransition(BSharpNode<Comparable> node) {
+    var isRead = widget.currentTransition != null
+        ? widget.currentTransition is NodeRead &&
+            widget.currentTransition!.targetId == node.id
+        : false;
+    var isWritten = widget.currentTransition != null
+        ? widget.currentTransition is NodeWritten &&
+            widget.currentTransition!.targetId == node.id
+        : false;
+    return TreeNodeWidget(node, isRead, isWritten);
   }
 
   @override
   Widget build(BuildContext context) {
-    final myController = TextEditingController();
+    _components = createWidgetsFromTree();
 
-    final List<Widget> rows = [const Spacer()];
+    final List<Widget> rows = [
+      const Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 120,
+            height: 80,
+            child: Text("Nodos libres:"),
+          )
+        ],
+      )
+    ];
 
     for (var mapEntry in _components!.entries) {
       List<Widget> children = mapEntry.value.fold([
@@ -53,29 +73,6 @@ class _TreeWidgetState extends State<TreeWidget> {
       ], (previousValue, widget) => previousValue + ([widget, const Spacer()]));
       rows.addAll([Row(children: children), const Spacer()]);
     }
-
-    rows.add(Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 120,
-            height: 80,
-            child: TextField(
-                maxLength: 5,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'valor a insertar',
-                ),
-                controller: myController),
-          ),
-          ElevatedButton(
-              onPressed: () {
-                modifyTree(myController.text);
-                myController.clear();
-              },
-              child: const Text("insertar"))
-        ]));
 
     return ArrowContainer(
       child: Column(

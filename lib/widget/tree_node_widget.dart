@@ -9,12 +9,15 @@ import 'package:widget_arrows/widget_arrows.dart';
 
 class TreeNodeWidget extends StatelessWidget {
   final BSharpNode node;
+  final bool isRead;
+  final bool isWritten;
 
-  const TreeNodeWidget(this.node, {super.key});
+  const TreeNodeWidget(this.node, this.isRead, this.isWritten, {super.key});
 
   List<Component> buildComponents() {
     final valueNodes = <Widget>[];
     String nodeId = node.id;
+    var colorByCapacityState = getColorByCapacityState(node);
     if (node is BSharpIndexNode) {
       var indexNode = node as BSharpIndexNode;
       final firstValue = indexNode.rightNodes.firstOrNull;
@@ -26,7 +29,7 @@ class TreeNodeWidget extends StatelessWidget {
       valueNodes.add(const Spacer());
       if (firstValue != null) {
         valueNodes.addAll([
-          _boxContainer(firstValue.key.toString())
+          _boxContainer(firstValue.key.toString(), colorByCapacityState)
               .link(
                   nodeId + firstValue.key.toString() + indexNode.leftNode.id,
                   Alignment.bottomLeft,
@@ -45,7 +48,7 @@ class TreeNodeWidget extends StatelessWidget {
       for (var indexRecord in nextValues) {
         String key = indexRecord.key.toString();
         valueNodes.addAll([
-          _boxContainer(key).link(
+          _boxContainer(key, colorByCapacityState).link(
               nodeId + key + indexRecord.rightNode.id,
               Alignment.bottomRight,
               indexRecord.rightNode.id,
@@ -62,7 +65,8 @@ class TreeNodeWidget extends StatelessWidget {
       valueNodes.add(const Spacer());
       for (var value in sequentialNode.values) {
         valueNodes.addAll([
-          _boxContainer(value.toString()),
+          _boxContainer(value.toString(), colorByCapacityState),
+          _boxContainer("...", colorByCapacityState, width: 15, padding: 0.0)
         ]);
       }
       valueNodes.add(const Spacer());
@@ -101,33 +105,68 @@ class TreeNodeWidget extends StatelessWidget {
     return ArrowElement(
         id: node.id,
         child: Container(
-            width: max(50, 20 + node.length() * 35),
+            width: max(50, 30 + node.length() * 50),
             height: 65,
             decoration: BoxDecoration(
-                border: Border.all(),
+                border: Border.all(
+                    color: isRead || isWritten ? Colors.red : Colors.black),
                 color: Colors.white,
                 borderRadius: const BorderRadius.all(Radius.circular(10)),
                 boxShadow: const [
-                  BoxShadow(blurRadius: 10),
+                  BoxShadow(blurRadius: 5),
                 ]),
             child: Column(
-              children: <Widget>[
-                // Create all of the colored boxes in the colors map.
-                for (final Component component in components)
-                  Container(
-                    child: component.widget,
-                  ),
-              ],
+              children: buildComponentsContainers(components),
             )));
   }
 
-  static Widget _boxContainer(String text,
-      {double margin = 0.0, Color color = Colors.cyan}) {
+  List<Widget> buildComponentsContainers(List<Component> components) {
+    var widgets = <Widget>[];
+    if (isRead || isWritten) {
+      widgets.add(Row(
+        children: [
+          const Spacer(),
+          const Spacer(),
+          Container(
+            child: components[0].widget,
+          ),
+          const Spacer(),
+          Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.fromLTRB(5.0, 0.0, 5.0, 0.0),
+            child: SizedBox(
+              width: 30,
+              height: 20,
+              child: FittedBox(
+                fit: BoxFit.fitWidth,
+                alignment: Alignment.bottomCenter,
+                child: Text(
+                  "${isRead ? "Read" : ""}${isWritten ? "Written" : ""}",
+                  style: const TextStyle(
+                      color: Colors.red, backgroundColor: Colors.white),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ));
+    } else {
+      widgets.add(Container(child: components[0].widget));
+    }
+    widgets.add(Container(child: components[1].widget));
+    return widgets;
+  }
+
+  static Widget _boxContainer(String text, Color color,
+      {double margin = 0.0,
+      double width = 35.0,
+      double height = 40.0,
+      double padding = 5.0}) {
     return Container(
-      width: 35.0,
-      height: 40.0,
+      width: width,
+      height: height,
       margin: EdgeInsets.all(margin),
-      padding: const EdgeInsets.all(5),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         border: Border.all(),
         color: color,
@@ -140,6 +179,16 @@ class TreeNodeWidget extends StatelessWidget {
                 decoration: TextDecoration.none,
               ))),
     );
+  }
+
+  Color getColorByCapacityState(BSharpNode node) {
+    if (node.isOverflowed() || node.isOverflowed()) {
+      return Colors.red;
+    } else if (node.isAtMaxCapacity()) {
+      return Colors.yellow;
+    } else {
+      return Colors.cyan;
+    }
   }
 }
 

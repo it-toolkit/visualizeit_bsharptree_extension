@@ -13,6 +13,7 @@ class BSharpTreeModel extends Model {
   BSharpTree? get currentTree => _transitions.isEmpty
       ? _lastTransitionTree
       : _transitions[_currentFrame].transitionTree ?? _lastTransitionTree;
+
   BSharpTreeTransition? get currentTransition =>
       _transitions.isNotEmpty ? _transitions[_currentFrame] : null;
   int get _pendingFrames => _transitions.length - _currentFrame - 1;
@@ -23,6 +24,14 @@ class BSharpTreeModel extends Model {
     _baseTree.insertAll(initialValues);
     _lastTransitionTree = _baseTree;
   }
+  BSharpTreeModel.copyWith(
+      this._baseTree,
+      this._currentFrame,
+      this._currentUuid,
+      this._lastTransitionTree,
+      this._transitions,
+      super.name,
+      super.extensionId);
 
   (int, Model) executeInsertion(String uuid, num value) {
     if (_canExecuteCommand(uuid)) {
@@ -66,6 +75,13 @@ class BSharpTreeModel extends Model {
 
   @override
   Model clone() {
-    return this;
+    return BSharpTreeModel.copyWith(
+        _baseTree.clone(),
+        _currentFrame,
+        _currentUuid,
+        _lastTransitionTree?.clone(),
+        List.of(_transitions),
+        name,
+        extensionId);
   }
 }
