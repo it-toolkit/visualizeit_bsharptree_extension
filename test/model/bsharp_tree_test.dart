@@ -49,7 +49,7 @@ void main() {
       expect(transitions[4],
           predicate<NodeCreation>((t) => t.targetId == "3" && !t.hasTree()));
       expect(transitions[5],
-          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[6],
           predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
       expect(transitions[7],
@@ -74,22 +74,22 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(8));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeOverflow>((t) => t.targetId == "2" && t.hasTree()));
-      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "3"));
+          predicate<NodeOverflow>((t) => t.targetId == "3" && t.hasTree()));
+      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(
           transitions[5],
           predicate<NodeBalancing>((t) =>
-              t.targetId == "3" &&
-              t.firstOptionalTarget == "2" &&
+              t.targetId == "2" &&
+              t.firstOptionalTarget == "3" &&
               t.hasTree()));
       expect(transitions[6],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[7],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
     });
 
     test('Balancing in sequential node to right sibling with available space',
@@ -111,20 +111,20 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(8));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeOverflow>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeOverflow>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "4"));
       expect(
           transitions[5],
           predicate<NodeBalancing>((t) =>
-              t.targetId == "3" &&
+              t.targetId == "2" &&
               t.firstOptionalTarget == "4" &&
               t.hasTree()));
       expect(transitions[6],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[7],
           predicate<NodeWritten>((t) => t.targetId == "4" && t.hasTree()));
     });
@@ -147,17 +147,17 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(9));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeOverflow>((t) => t.targetId == "3" && t.hasTree()));
-      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "2"));
+          predicate<NodeOverflow>((t) => t.targetId == "2" && t.hasTree()));
+      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(
           transitions[5],
           predicate<NodeSplit>((t) =>
-              t.targetId == "3" &&
-              t.firstOptionalTarget == "2" &&
+              t.targetId == "2" &&
+              t.firstOptionalTarget == "3" &&
               !t.hasTree()));
       expect(transitions[6],
           predicate<NodeCreation>((t) => t.targetId == "4" && !t.hasTree()));
@@ -185,17 +185,17 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(9));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeOverflow>((t) => t.targetId == "2" && t.hasTree()));
-      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "3"));
+          predicate<NodeOverflow>((t) => t.targetId == "3" && t.hasTree()));
+      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(
           transitions[5],
           predicate<NodeSplit>((t) =>
-              t.targetId == "3" &&
-              t.firstOptionalTarget == "2" &&
+              t.targetId == "2" &&
+              t.firstOptionalTarget == "3" &&
               !t.hasTree()));
       expect(transitions[6],
           predicate<NodeCreation>((t) => t.targetId == "4" && !t.hasTree()));
@@ -224,16 +224,16 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(15));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeOverflow>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeOverflow>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "4"));
       expect(
           transitions[5],
           predicate<NodeSplit>((t) =>
-              t.targetId == "3" &&
+              t.targetId == "2" &&
               t.firstOptionalTarget == "4" &&
               !t.hasTree()));
       expect(transitions[6],
@@ -367,17 +367,17 @@ void main() {
       expect(transitions, hasLength(15));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
       expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "9"));
-      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[3],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[4],
-          predicate<NodeOverflow>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeOverflow>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "6"));
       expect(
           transitions[6],
           predicate<NodeSplit>((t) =>
               t.targetId == "6" &&
-              t.firstOptionalTarget == "2" &&
+              t.firstOptionalTarget == "3" &&
               !t.hasTree()));
       expect(transitions[7],
           predicate<NodeCreation>((t) => t.targetId == "11" && !t.hasTree()));
@@ -439,16 +439,16 @@ void main() {
       expect(transitions, hasLength(18));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
       expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "8"));
-      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(transitions[3],
-          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[4],
-          predicate<NodeOverflow>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeOverflow>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "10"));
       expect(
           transitions[6],
           predicate<NodeSplit>((t) =>
-              t.targetId == "3" &&
+              t.targetId == "2" &&
               t.firstOptionalTarget == "10" &&
               !t.hasTree()));
       expect(transitions[7],
@@ -497,17 +497,17 @@ void main() {
       expect(transitions, hasLength(18));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
       expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "7"));
-      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[3],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[4],
-          predicate<NodeOverflow>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeOverflow>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "9"));
       expect(
           transitions[6],
           predicate<NodeSplit>((t) =>
               t.targetId == "9" &&
-              t.firstOptionalTarget == "2" &&
+              t.firstOptionalTarget == "3" &&
               !t.hasTree()));
       expect(transitions[7],
           predicate<NodeCreation>((t) => t.targetId == "10" && !t.hasTree()));
@@ -613,20 +613,20 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(8));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "4"));
       expect(
           transitions[5],
           predicate<NodeBalancing>((t) =>
-              t.targetId == "3" &&
+              t.targetId == "2" &&
               t.firstOptionalTarget == "4" &&
               t.hasTree()));
       expect(transitions[6],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[7],
           predicate<NodeWritten>((t) => t.targetId == "4" && t.hasTree()));
     });
@@ -648,22 +648,22 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(8));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
-      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "3"));
+          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
+      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(
           transitions[5],
           predicate<NodeBalancing>((t) =>
-              t.targetId == "3" &&
-              t.firstOptionalTarget == "2" &&
+              t.targetId == "2" &&
+              t.firstOptionalTarget == "3" &&
               t.hasTree()));
       expect(transitions[6],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[7],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
     });
 
     test('remove with only two nodes - fusion with left sibling', () {
@@ -684,24 +684,24 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(10));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
-      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "3"));
+          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
+      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(
           transitions[5],
           predicate<NodeFusion>((t) =>
-              t.targetId == "3" &&
-              t.firstOptionalTarget == "2" &&
+              t.targetId == "2" &&
+              t.firstOptionalTarget == "3" &&
               !t.hasTree()));
       expect(transitions[6],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[7],
-          predicate<NodeRelease>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeRelease>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[8],
-          predicate<NodeRelease>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeRelease>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[9],
           predicate<NodeWritten>((t) => t.targetId == "0-1" && t.hasTree()));
     });
@@ -724,24 +724,24 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(10));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
-      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "2"));
+          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
+      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(
           transitions[5],
           predicate<NodeFusion>((t) =>
-              t.targetId == "3" &&
-              t.firstOptionalTarget == "2" &&
+              t.targetId == "2" &&
+              t.firstOptionalTarget == "3" &&
               !t.hasTree()));
       expect(transitions[6],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[7],
-          predicate<NodeRelease>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeRelease>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[8],
-          predicate<NodeRelease>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeRelease>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[9],
           predicate<NodeWritten>((t) => t.targetId == "0-1" && t.hasTree()));
     });
@@ -768,19 +768,19 @@ void main() {
           predicate<NodeWritten>((t) => t.targetId == "4" && t.hasTree()));
       expect(transitions[3],
           predicate<NodeUnderflow>((t) => t.targetId == "4" && t.hasTree()));
-      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "2"));
-      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(
           transitions[6],
           predicate<NodeFusion>((t) =>
               t.targetId == "4" &&
-              t.firstOptionalTarget == "3" &&
-              t.secondOptionalTargetId == "2" &&
+              t.firstOptionalTarget == "2" &&
+              t.secondOptionalTargetId == "3" &&
               !t.hasTree()));
       expect(transitions[7],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
-      expect(transitions[8],
           predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
+      expect(transitions[8],
+          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
       expect(transitions[9],
           predicate<NodeRelease>((t) => t.targetId == "4" && t.hasTree()));
       expect(transitions[10],
@@ -804,24 +804,24 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(11));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "4"));
-      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(
           transitions[6],
           predicate<NodeFusion>((t) =>
               t.targetId == "4" &&
-              t.firstOptionalTarget == "3" &&
-              t.secondOptionalTargetId == "2" &&
+              t.firstOptionalTarget == "2" &&
+              t.secondOptionalTargetId == "3" &&
               !t.hasTree()));
       expect(transitions[7],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
-      expect(transitions[8],
           predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
+      expect(transitions[8],
+          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
       expect(transitions[9],
           predicate<NodeRelease>((t) => t.targetId == "4" && t.hasTree()));
       expect(transitions[10],
@@ -847,26 +847,26 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(11));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "4"));
-      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(
           transitions[6],
           predicate<NodeFusion>((t) =>
-              t.targetId == "2" &&
-              t.firstOptionalTarget == "3" &&
+              t.targetId == "3" &&
+              t.firstOptionalTarget == "2" &&
               t.secondOptionalTargetId == "4" &&
               !t.hasTree()));
       expect(transitions[7],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[8],
           predicate<NodeWritten>((t) => t.targetId == "4" && !t.hasTree()));
       expect(transitions[9],
-          predicate<NodeRelease>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeRelease>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[10],
           predicate<NodeWritten>((t) => t.targetId == "0-1" && t.hasTree()));
     });
@@ -896,15 +896,15 @@ void main() {
           predicate<NodeWritten>((t) => t.targetId == "4" && t.hasTree()));
       expect(transitions[4],
           predicate<NodeUnderflow>((t) => t.targetId == "4" && t.hasTree()));
-      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(
           transitions[6],
           predicate<NodeFusion>((t) =>
-              t.targetId == "3" &&
+              t.targetId == "2" &&
               t.firstOptionalTarget == "4" &&
               !t.hasTree()));
       expect(transitions[7],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[8],
           predicate<NodeRelease>((t) => t.targetId == "4" && t.hasTree()));
       expect(transitions[9],
@@ -947,22 +947,22 @@ void main() {
       expect(transitions, hasLength(15));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
       expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "7"));
-      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[3],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[4],
-          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "4"));
       expect(
           transitions[6],
           predicate<NodeFusion>((t) =>
               t.targetId == "4" &&
-              t.firstOptionalTarget == "2" &&
+              t.firstOptionalTarget == "3" &&
               !t.hasTree()));
       expect(transitions[7],
           predicate<NodeWritten>((t) => t.targetId == "4" && !t.hasTree()));
       expect(transitions[8],
-          predicate<NodeRelease>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeRelease>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[9],
           predicate<NodeWritten>((t) => t.targetId == "7" && t.hasTree()));
       expect(transitions[10],
@@ -1002,20 +1002,20 @@ void main() {
 
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
       expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "6"));
-      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(transitions[3],
-          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[4],
-          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "5"));
       expect(
           transitions[6],
           predicate<NodeFusion>((t) =>
-              t.targetId == "3" &&
+              t.targetId == "2" &&
               t.firstOptionalTarget == "5" &&
               !t.hasTree()));
       expect(transitions[7],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[8],
           predicate<NodeRelease>((t) => t.targetId == "5" && t.hasTree()));
       expect(transitions[9],
@@ -1059,22 +1059,22 @@ void main() {
       expect(transitions, hasLength(17));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
       expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "7"));
-      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[3],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[4],
-          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "4"));
       expect(
           transitions[6],
           predicate<NodeFusion>((t) =>
               t.targetId == "4" &&
-              t.firstOptionalTarget == "2" &&
+              t.firstOptionalTarget == "3" &&
               !t.hasTree()));
       expect(transitions[7],
           predicate<NodeWritten>((t) => t.targetId == "4" && !t.hasTree()));
       expect(transitions[8],
-          predicate<NodeRelease>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeRelease>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[9],
           predicate<NodeWritten>((t) => t.targetId == "7" && t.hasTree()));
       expect(transitions[10],
@@ -1112,26 +1112,26 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(10));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
+          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
       expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "4"));
-      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(
           transitions[6],
           predicate<NodeBalancing>((t) =>
-              t.targetId == "3" &&
+              t.targetId == "2" &&
               t.firstOptionalTarget == "4" &&
-              t.secondOptionalTargetId == "2" &&
+              t.secondOptionalTargetId == "3" &&
               t.hasTree()));
       expect(transitions[7],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[8],
           predicate<NodeWritten>((t) => t.targetId == "4" && !t.hasTree()));
       expect(transitions[9],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
     });
 
     test('remove with two left siblings balancing', () {
@@ -1152,26 +1152,26 @@ void main() {
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(10));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
-      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "2"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "3"));
       expect(transitions[2],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[3],
-          predicate<NodeUnderflow>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeUnderflow>((t) => t.targetId == "3" && t.hasTree()));
       expect(transitions[4], predicate<NodeRead>((t) => t.targetId == "4"));
-      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "3"));
+      expect(transitions[5], predicate<NodeRead>((t) => t.targetId == "2"));
       expect(
           transitions[6],
           predicate<NodeBalancing>((t) =>
-              t.targetId == "3" &&
+              t.targetId == "2" &&
               t.firstOptionalTarget == "4" &&
-              t.secondOptionalTargetId == "2" &&
+              t.secondOptionalTargetId == "3" &&
               t.hasTree()));
       expect(transitions[7],
-          predicate<NodeWritten>((t) => t.targetId == "3" && !t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "2" && !t.hasTree()));
       expect(transitions[8],
           predicate<NodeWritten>((t) => t.targetId == "4" && !t.hasTree()));
       expect(transitions[9],
-          predicate<NodeWritten>((t) => t.targetId == "2" && t.hasTree()));
+          predicate<NodeWritten>((t) => t.targetId == "3" && t.hasTree()));
     });
   });
 

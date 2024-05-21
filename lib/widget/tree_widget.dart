@@ -46,7 +46,14 @@ class _TreeWidgetState extends State<TreeWidget> {
         ? widget.currentTransition is NodeWritten &&
             widget.currentTransition!.targetId == node.id
         : false;
-    return TreeNodeWidget(node, isRead, isWritten);
+    var isBalancing = widget.currentTransition != null
+        ? widget.currentTransition is NodeBalancing &&
+            (widget.currentTransition!.targetId == node.id ||
+                widget.currentTransition!.firstOptionalTarget == node.id ||
+                widget.currentTransition!.secondOptionalTargetId == node.id)
+        : false;
+
+    return TreeNodeWidget(node, isRead, isWritten, isBalancing);
   }
 
   @override
@@ -54,14 +61,22 @@ class _TreeWidgetState extends State<TreeWidget> {
     _components = createWidgetsFromTree();
 
     final List<Widget> rows = [
-      const Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 120,
             height: 80,
-            child: Text("Nodos libres:"),
+            child: Text(widget.currentTransition != null &&
+                    widget.currentTransition is NodeCreation
+                ? widget.currentTransition.toString()
+                : ""),
+          ),
+          SizedBox(
+            width: 120,
+            height: 80,
+            child: Text("Nodos libres: ${widget.tree.freeNodesIds}"),
           )
         ],
       )
@@ -117,7 +132,7 @@ class _TreeWidgetState extends State<TreeWidget> {
       children: [
         CustomPaint(
           size: const Size(10, 10),
-          painter: CirclePainter(color),
+          painter: RoundedRectanglePainter(color),
         ),
         SizedBox(
           width: 138,
@@ -134,17 +149,9 @@ class _TreeWidgetState extends State<TreeWidget> {
   }
 }
 
-class CirclePainter extends CustomPainter {
+class RoundedRectanglePainter extends CustomPainter {
   Color color;
-  CirclePainter(this.color);
-
-  /*@override
-  void paint(Canvas canvas, Size size) {
-    Paint paint = Paint();
-    paint.strokeWidth = 2;
-    paint.color = color;
-    canvas.drawCircle(Offset(size.width / 2, size.height / 2), 6, paint);
-  }*/
+  RoundedRectanglePainter(this.color);
 
   @override
   void paint(Canvas canvas, Size size) {

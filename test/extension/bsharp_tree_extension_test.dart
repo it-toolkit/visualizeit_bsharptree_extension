@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_builder_command.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_extension.dart';
-import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_insert_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_model.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_bsharptree_extension/widget/tree_widget.dart';
@@ -27,10 +27,11 @@ void main() {
       expect(
           extension.getAllCommandDefinitions(),
           allOf(
-              hasLength(2),
+              hasLength(3),
               containsAll([
                 BSharpTreeInsertCommand.commandDefinition,
-                BSharpTreeBuilderCommand.commandDefinition
+                BSharpTreeBuilderCommand.commandDefinition,
+                BSharpTreeRemoveCommand.commandDefinition
               ])));
     });
 

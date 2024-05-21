@@ -1,4 +1,5 @@
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_extension.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_extensions/common.dart';
@@ -33,26 +34,21 @@ class BSharpTreeModel extends Model {
       super.name,
       super.extensionId);
 
-  (int, Model) executeInsertion(String uuid, num value) {
-    if (_canExecuteCommand(uuid)) {
+  (int, Model) executeCommand(BSharpTreeCommand command) {
+    var functionToExecute = getFunctionFromCommand(command);
+    if (_canExecuteCommand(command.uuid)) {
       if (isInTransition()) {
         //El arbol está en transicion
         _currentFrame++;
         if (_transitions[_currentFrame].hasTree()) {
           _lastTransitionTree = _transitions[_currentFrame].transitionTree!;
         }
-        if (_currentFrame == _transitions.length - 1) {
-          //finaliza la transicion
-          _transitions = [];
-          _currentFrame = 0;
-          _currentUuid = "";
-          return (0, this);
-        }
       } else {
         //Arranca una transición
         _lastTransitionTree = _baseTree.clone();
-        _currentUuid = uuid;
-        _baseTree.insert(value);
+        _currentUuid = command.uuid;
+        _currentFrame = 0;
+        functionToExecute.call(_baseTree);
         _transitions = _baseTree.getTransitions();
         if (_transitions.firstOrNull?.transitionTree != null) {
           _lastTransitionTree = _transitions.first.transitionTree;
@@ -65,12 +61,46 @@ class BSharpTreeModel extends Model {
     }
   }
 
+  /*(int, Model) executeInsertion(String uuid, num value) {
+    if (_canExecuteCommand(uuid)) {
+      if (isInTransition()) {
+        //El arbol está en transicion
+        _currentFrame++;
+        if (_transitions[_currentFrame].hasTree()) {
+          _lastTransitionTree = _transitions[_currentFrame].transitionTree!;
+        }
+        /*if (_currentFrame == _transitions.length - 1) {
+          //finaliza la transicion
+          //_transitions = [];
+          //_currentFrame = 0;
+          //_currentUuid = "";
+          return (0, this);
+        }*/
+      } else {
+        //Arranca una transición
+        _lastTransitionTree = _baseTree.clone();
+        _currentUuid = uuid;
+        _currentFrame = 0;
+        _baseTree.insert(value);
+        _transitions = _baseTree.getTransitions();
+        if (_transitions.firstOrNull?.transitionTree != null) {
+          _lastTransitionTree = _transitions.first.transitionTree;
+        }
+      }
+      return (_pendingFrames, this);
+    } else {
+      throw UnsupportedError(
+          "cant execute a command while another command is on transition");
+    }
+  }*/
+
   bool _canExecuteCommand(uuid) {
-    return _transitions.isEmpty || _currentUuid == uuid;
+    return (_currentUuid != uuid && !isInTransition()) ||
+        (_currentUuid == uuid && isInTransition());
   }
 
   bool isInTransition() {
-    return _transitions.isNotEmpty;
+    return _transitions.isNotEmpty && _currentFrame < _transitions.length - 1;
   }
 
   @override
@@ -83,5 +113,14 @@ class BSharpTreeModel extends Model {
         List.of(_transitions),
         name,
         extensionId);
+  }
+
+  void Function(BSharpTree<Comparable> tree) getFunctionFromCommand(
+      BSharpTreeCommand command) {
+    if (command is BSharpTreeInsertCommand) {
+      return (BSharpTree tree) => tree.insert(command.value);
+    } else {
+      return (BSharpTree tree) => tree.remove(command.value);
+    }
   }
 }

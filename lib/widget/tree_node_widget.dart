@@ -11,8 +11,10 @@ class TreeNodeWidget extends StatelessWidget {
   final BSharpNode node;
   final bool isRead;
   final bool isWritten;
+  final bool isBalancing;
 
-  const TreeNodeWidget(this.node, this.isRead, this.isWritten, {super.key});
+  const TreeNodeWidget(this.node, this.isRead, this.isWritten, this.isBalancing,
+      {super.key});
 
   List<Component> buildComponents() {
     final valueNodes = <Widget>[];
@@ -102,6 +104,8 @@ class TreeNodeWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Component> components = buildComponents();
 
+    var boxBorderWidth = isRead || isWritten || isBalancing ? 2.0 : 1.0;
+
     return ArrowElement(
         id: node.id,
         child: Container(
@@ -109,8 +113,10 @@ class TreeNodeWidget extends StatelessWidget {
             height: 65,
             decoration: BoxDecoration(
                 border: Border.all(
-                    width: isRead || isWritten ? 2 : 1,
-                    color: isRead || isWritten ? Colors.blue : Colors.black,
+                    width: boxBorderWidth,
+                    color: isRead || isWritten || isBalancing
+                        ? Colors.blue
+                        : Colors.black,
                     strokeAlign: BorderSide.strokeAlignOutside),
                 color: Colors.white,
                 borderRadius: const BorderRadius.all(Radius.circular(10)),
@@ -125,6 +131,20 @@ class TreeNodeWidget extends StatelessWidget {
   List<Widget> buildComponentsContainers(List<Component> components) {
     var widgets = <Widget>[];
     if (isRead || isWritten) {
+      var text = "";
+      if (isRead) {
+        text = "Leido";
+      } else if (isWritten) {
+        text = "Escrito";
+      } else if (isBalancing) {
+        text = "Balanceando";
+      }
+      var textColor = Colors.black;
+      if (isWritten) {
+        textColor = Colors.green;
+      } else if (isBalancing) {
+        textColor = Colors.blue;
+      }
       widgets.add(Row(
         children: [
           const Spacer(),
@@ -143,9 +163,9 @@ class TreeNodeWidget extends StatelessWidget {
                 fit: BoxFit.fitWidth,
                 alignment: Alignment.bottomCenter,
                 child: Text(
-                  "${isRead ? "Leido" : ""}${isWritten ? "Escrito" : ""}",
-                  style: const TextStyle(
-                      color: Colors.blue, backgroundColor: Colors.white),
+                  text,
+                  style: TextStyle(
+                      color: textColor, backgroundColor: Colors.white),
                 ),
               ),
             ),

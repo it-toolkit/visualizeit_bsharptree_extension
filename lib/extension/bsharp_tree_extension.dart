@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_builder_command.dart';
-import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_insert_command.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_model.dart';
 import 'package:visualizeit_bsharptree_extension/widget/tree_widget.dart';
 import 'package:visualizeit_extensions/common.dart';
@@ -13,7 +13,7 @@ final _logger = Logger("extension.bsharptree");
 
 class BSharpTreeExtensionBuilder implements ExtensionBuilder {
   static const _docsLocationPath =
-      "packages/visualizeit_extension_template/assets/docs";
+      "packages/visualizeit_bsharptree_extension/assets/docs";
   static const _availableDocsLanguages = [LanguageCodes.en];
 
   @override
@@ -40,7 +40,9 @@ class BSharpTreeExtension extends DefaultScriptingExtension
           BSharpTreeBuilderCommand.commandDefinition:
               BSharpTreeBuilderCommand.build,
           BSharpTreeInsertCommand.commandDefinition:
-              BSharpTreeInsertCommand.build
+              BSharpTreeInsertCommand.build,
+          BSharpTreeRemoveCommand.commandDefinition:
+              BSharpTreeRemoveCommand.build
         });
 
   @override

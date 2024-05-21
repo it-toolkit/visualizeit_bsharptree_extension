@@ -15,6 +15,8 @@ class BSharpTree<T extends Comparable<T>> {
 
   final logger = Logger("extension.bsharptree.model");
 
+  var freeNodesIds = [];
+
   BSharpTree(this.maxCapacity);
 
   BSharpTree._copy(this._rootNode, this.maxCapacity, this.nodesQuantity);
@@ -54,16 +56,27 @@ class BSharpTree<T extends Comparable<T>> {
           //Si se supera la maxima capacidad de la raiz
           transitions.add(
               NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-          var rightNode = BSharpSequentialNode<T>.createNode(
-              (nodesQuantity++).toString(),
-              0,
-              maxCapacity,
-              node.values.sublist(node.length() ~/ 2));
           var leftNode = BSharpSequentialNode<T>.createNode(
               (nodesQuantity++).toString(),
               0,
               maxCapacity,
               node.values.sublist(0, node.length() ~/ 2));
+          var rightNode = BSharpSequentialNode<T>.createNode(
+              (nodesQuantity++).toString(),
+              0,
+              maxCapacity,
+              node.values.sublist(node.length() ~/ 2));
+          /*var rightNode = BSharpSequentialNode<T>.createNode(
+              (nodesQuantity++).toString(), 0, maxCapacity, []);
+          transitions.add(NodeCreation(
+              targetId: rightNode.id, transitionTree: this.clone()));*/
+
+          /*var leftNode = BSharpSequentialNode<T>.createNode(
+              (nodesQuantity++).toString(), 0, maxCapacity, []);
+          transitions.add(NodeCreation(
+              targetId: leftNode.id, transitionTree: this.clone()));
+          rightNode.addAllToNode(node.values.sublist(node.length() ~/ 2));
+          leftNode.addAllToNode(node.values.sublist(0, node.length() ~/ 2));*/
 
           leftNode.nextNode = rightNode;
           //Crear el nuevo nodo indice raiz que va a reemplazar al nodo secuencia
@@ -73,10 +86,10 @@ class BSharpTree<T extends Comparable<T>> {
           newRoot.fixFamilyRelations();
           _rootNode = newRoot;
           transitions.addAll([
-            NodeCreation(targetId: rightNode.id),
             NodeCreation(targetId: leftNode.id),
+            NodeCreation(targetId: rightNode.id),
+            NodeWritten(targetId: leftNode.id, transitionTree: this),
             NodeWritten(targetId: rightNode.id),
-            NodeWritten(targetId: leftNode.id),
             NodeWritten(targetId: newRoot.id, transitionTree: this)
           ]);
         }

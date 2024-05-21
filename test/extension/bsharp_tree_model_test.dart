@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_model.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_extensions/common.dart';
@@ -41,8 +42,8 @@ void main() {
 
       int pendingFrames;
       Model modelAfterExecution;
-      (pendingFrames, modelAfterExecution) =
-          model.executeInsertion("uuid", valueToInsert);
+      (pendingFrames, modelAfterExecution) = model
+          .executeCommand(BSharpTreeInsertCommand(valueToInsert, "modelName"));
 
       expect(pendingFrames, 1);
       expect(modelAfterExecution, isA<BSharpTreeModel>());
@@ -56,8 +57,8 @@ void main() {
 
       int pendingFrames;
       Model modelAfterExecution;
-      (pendingFrames, modelAfterExecution) =
-          model.executeInsertion("uuid", valueToInsert);
+      (pendingFrames, modelAfterExecution) = model
+          .executeCommand(BSharpTreeInsertCommand(valueToInsert, "modelName"));
 
       expect(pendingFrames, greaterThan(0));
       expect(modelAfterExecution, isA<BSharpTreeModel>());
@@ -75,13 +76,13 @@ void main() {
 
       int pendingFrames;
       BSharpTreeModel modelAfterExecution;
-      (pendingFrames, modelAfterExecution as BSharpTreeModel) =
-          model.executeInsertion("uuid", valueToInsert);
+      (pendingFrames, modelAfterExecution as BSharpTreeModel) = model
+          .executeCommand(BSharpTreeInsertCommand(valueToInsert, "modelName"));
 
       expect(pendingFrames, greaterThan(0));
       expect(
-          () => modelAfterExecution.executeInsertion(
-              "uuid2", anotherValueToInsert),
+          () => modelAfterExecution.executeCommand(
+              BSharpTreeInsertCommand(anotherValueToInsert, "modelName")),
           throwsA(const TypeMatcher<UnsupportedError>()));
     });
 
@@ -90,12 +91,13 @@ void main() {
       int valueToInsert = 10;
       BSharpTreeModel model =
           BSharpTreeModel("name", treeCapacity, [3, 6, 9, 12]);
+      var command = BSharpTreeInsertCommand(valueToInsert, "modelName");
 
       int pendingFrames;
       Model modelAfterExecution;
+
       do {
-        (pendingFrames, modelAfterExecution) =
-            model.executeInsertion("uuid", valueToInsert);
+        (pendingFrames, modelAfterExecution) = model.executeCommand(command);
       } while (pendingFrames > 0);
 
       expect(pendingFrames, 0);

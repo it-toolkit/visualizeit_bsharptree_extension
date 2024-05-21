@@ -42,6 +42,11 @@ class NodeCreation extends BSharpTreeTransition {
   NodeCreation({required super.targetId, super.transitionTree}) {
     logger.debug(() => "Creando nodo con id: $_targetId");
   }
+
+  @override
+  String toString() {
+    return "Creando nodo: ${super.toString()}";
+  }
 }
 
 class NodeRead extends BSharpTreeTransition {
