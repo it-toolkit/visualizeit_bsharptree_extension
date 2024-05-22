@@ -9,7 +9,7 @@ import 'bsharp_tree_model.dart';
 abstract class BSharpTreeCommand extends ModelCommand {
   final num value;
   final String uuid;
-  final _logger;
+  final Logger _logger;
   BSharpTreeCommand(this.value, this.uuid, this._logger, super.modelName);
 
   @override
@@ -27,6 +27,21 @@ abstract class BSharpTreeCommand extends ModelCommand {
 
     return result;
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (other is BSharpTreeCommand) {
+      if (runtimeType == other.runtimeType) {
+        if (uuid == other.uuid) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([value, uuid, modelName]);
 }
 
 class BSharpTreeInsertCommand extends BSharpTreeCommand {
@@ -45,6 +60,10 @@ class BSharpTreeInsertCommand extends BSharpTreeCommand {
             const Uuid().v4(),
             Logger("extension.bsharptree.insert"),
             ""); //TODO entender para que es necesario el modelName acá
+  @override
+  String toString() {
+    return "Insertando valor: $value";
+  }
 }
 
 class BSharpTreeRemoveCommand extends BSharpTreeCommand {
@@ -63,4 +82,8 @@ class BSharpTreeRemoveCommand extends BSharpTreeCommand {
             const Uuid().v4(),
             Logger("extension.bsharptree.remove"),
             ""); //TODO entender para que es necesario el modelName acá
+  @override
+  String toString() {
+    return "Removiendo valor: $value";
+  }
 }

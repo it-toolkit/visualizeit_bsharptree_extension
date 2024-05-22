@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_command.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_bsharptree_extension/widget/tree_node_widget.dart';
@@ -8,8 +9,10 @@ import 'package:widget_arrows/widget_arrows.dart';
 class TreeWidget extends StatefulWidget {
   final BSharpTree tree;
   final BSharpTreeTransition? currentTransition;
+  final BSharpTreeCommand? commandInExecution;
 
-  const TreeWidget(this.tree, this.currentTransition, {super.key});
+  const TreeWidget(this.tree, this.currentTransition, this.commandInExecution,
+      {super.key});
 
   @override
   State<TreeWidget> createState() {
@@ -38,22 +41,12 @@ class _TreeWidgetState extends State<TreeWidget> {
   }
 
   TreeNodeWidget createNodeWithTransition(BSharpNode<Comparable> node) {
-    var isRead = widget.currentTransition != null
-        ? widget.currentTransition is NodeRead &&
-            widget.currentTransition!.targetId == node.id
-        : false;
-    var isWritten = widget.currentTransition != null
-        ? widget.currentTransition is NodeWritten &&
-            widget.currentTransition!.targetId == node.id
-        : false;
-    var isBalancing = widget.currentTransition != null
-        ? widget.currentTransition is NodeBalancing &&
-            (widget.currentTransition!.targetId == node.id ||
-                widget.currentTransition!.firstOptionalTarget == node.id ||
-                widget.currentTransition!.secondOptionalTargetId == node.id)
-        : false;
+    var nodeTransition = widget.currentTransition != null &&
+            widget.currentTransition!.isATarget(node.id)
+        ? widget.currentTransition
+        : null;
 
-    return TreeNodeWidget(node, isRead, isWritten, isBalancing);
+    return TreeNodeWidget(node, nodeTransition);
   }
 
   @override
@@ -63,21 +56,44 @@ class _TreeWidgetState extends State<TreeWidget> {
     final List<Widget> rows = [
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
-            height: 80,
-            child: Text(widget.currentTransition != null &&
-                    widget.currentTransition is NodeCreation
-                ? widget.currentTransition.toString()
-                : ""),
+            height: 30,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Text(widget.commandInExecution != null
+                  ? widget.commandInExecution.toString()
+                  : ""),
+            ),
           ),
           SizedBox(
             width: 120,
-            height: 80,
-            child: Text("Nodos libres: ${widget.tree.freeNodesIds}"),
+            height: 20,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Text(
+                  "Nodos libres: ${widget.tree.freeNodesIds.isNotEmpty ? widget.tree.freeNodesIds : ""}"),
+            ),
           )
+        ],
+      ),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 180,
+            height: 20,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              alignment: Alignment.centerLeft,
+              child: Text(widget.currentTransition != null
+                  ? widget.currentTransition.toString()
+                  : ""),
+            ),
+          ),
         ],
       )
     ];

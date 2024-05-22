@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_index_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_sequential_node.dart';
@@ -9,12 +10,9 @@ import 'package:widget_arrows/widget_arrows.dart';
 
 class TreeNodeWidget extends StatelessWidget {
   final BSharpNode node;
-  final bool isRead;
-  final bool isWritten;
-  final bool isBalancing;
+  final BSharpTreeTransition? transition;
 
-  const TreeNodeWidget(this.node, this.isRead, this.isWritten, this.isBalancing,
-      {super.key});
+  const TreeNodeWidget(this.node, this.transition, {super.key});
 
   List<Component> buildComponents() {
     final valueNodes = <Widget>[];
@@ -82,9 +80,9 @@ class TreeNodeWidget extends StatelessWidget {
           width: 30,
           height: 20,
           child: FittedBox(
-              fit: BoxFit.fitWidth,
+              fit: BoxFit.fitHeight,
               alignment: Alignment.bottomCenter,
-              child: Text("Id: $nodeId",
+              child: Text(nodeId,
                   style: const TextStyle(
                       color: Colors.black, decoration: TextDecoration.none))),
         ),
@@ -100,11 +98,29 @@ class TreeNodeWidget extends StatelessWidget {
     ];
   }
 
+  Color getBoxBorderColorByTransition() {
+    if (transition != null) {
+      if (transition is NodeRead ||
+          transition is NodeWritten ||
+          transition is NodeBalancing ||
+          transition is NodeSplit ||
+          transition is NodeFusion) {
+        return Colors.blue;
+      } else if (transition is NodeOverflow ||
+          transition is NodeUnderflow ||
+          transition is NodeRelease) {
+        return Colors.red;
+      }
+    }
+    return Colors.black;
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Component> components = buildComponents();
 
-    var boxBorderWidth = isRead || isWritten || isBalancing ? 2.0 : 1.0;
+    var boxBorderWidth = transition != null ? 2.0 : 1.0;
+    var boxBorderColor = getBoxBorderColorByTransition();
 
     return ArrowElement(
         id: node.id,
@@ -114,9 +130,7 @@ class TreeNodeWidget extends StatelessWidget {
             decoration: BoxDecoration(
                 border: Border.all(
                     width: boxBorderWidth,
-                    color: isRead || isWritten || isBalancing
-                        ? Colors.blue
-                        : Colors.black,
+                    color: boxBorderColor,
                     strokeAlign: BorderSide.strokeAlignOutside),
                 color: Colors.white,
                 borderRadius: const BorderRadius.all(Radius.circular(10)),
@@ -130,38 +144,26 @@ class TreeNodeWidget extends StatelessWidget {
 
   List<Widget> buildComponentsContainers(List<Component> components) {
     var widgets = <Widget>[];
-    if (isRead || isWritten) {
-      var text = "";
-      if (isRead) {
-        text = "Leido";
-      } else if (isWritten) {
-        text = "Escrito";
-      } else if (isBalancing) {
-        text = "Balanceando";
-      }
-      var textColor = Colors.black;
-      if (isWritten) {
-        textColor = Colors.green;
-      } else if (isBalancing) {
-        textColor = Colors.blue;
-      }
+    if (transition != null) {
+      String text = getNodeTextForTransition();
+      Color textColor = getTextColorForTransition();
       widgets.add(Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
         children: [
-          const Spacer(),
-          const Spacer(),
           Container(
             child: components[0].widget,
           ),
-          const Spacer(),
           Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.fromLTRB(5.0, 0.0, 5.0, 0.0),
+            alignment: Alignment.bottomRight,
+            padding: const EdgeInsets.fromLTRB(0.0, 1.0, 3.5, 1.0),
             child: SizedBox(
-              width: 30,
-              height: 20,
+              width: 30.0 + text.length.toDouble() * 1.5,
+              height: 18,
               child: FittedBox(
-                fit: BoxFit.fitWidth,
-                alignment: Alignment.bottomCenter,
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.bottomRight,
                 child: Text(
                   text,
                   style: TextStyle(
@@ -173,10 +175,50 @@ class TreeNodeWidget extends StatelessWidget {
         ],
       ));
     } else {
-      widgets.add(Container(child: components[0].widget));
+      widgets.add(
+          Container(alignment: Alignment.topLeft, child: components[0].widget));
     }
     widgets.add(Container(child: components[1].widget));
     return widgets;
+  }
+
+  Color getTextColorForTransition() {
+    if (transition is NodeRead) {
+      return Colors.brown;
+    } else if (transition is NodeOverflow ||
+        transition is NodeUnderflow ||
+        transition is NodeRelease) {
+      return Colors.red;
+    } else if (transition is NodeBalancing ||
+        transition is NodeSplit ||
+        transition is NodeFusion) {
+      return Colors.blue;
+    } else if (transition is NodeWritten) {
+      return Colors.green;
+    }
+    return Colors.black;
+  }
+
+  String getNodeTextForTransition() {
+    var text = "";
+    if (transition is NodeRead) {
+      text = "Leido";
+    } else if (transition is NodeWritten) {
+      text = "Escrito";
+    } else if (transition is NodeBalancing) {
+      text = "Balanceando";
+    } else if (transition is NodeOverflow) {
+      text = "Overflow";
+    } else if (transition is NodeUnderflow) {
+      text = "Underflow";
+    } else if (transition is NodeSplit) {
+      text = "Dividiendo";
+    } else if (transition is NodeFusion) {
+      text = "Fusionando";
+    } else if (transition is NodeRelease) {
+      text = "Liberando";
+    }
+    return text;
   }
 
   static Widget _boxContainer(String text, Color color,

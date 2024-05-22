@@ -48,7 +48,8 @@ class BSharpTreeExtension extends DefaultScriptingExtension
   @override
   Widget? render(Model model, BuildContext context) {
     if (model is BSharpTreeModel) {
-      return TreeWidget(model.currentTree!, model.currentTransition);
+      return TreeWidget(model.currentTree!, model.currentTransition,
+          model.commandInExecution);
     } else {
       return null;
     }

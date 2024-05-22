@@ -9,7 +9,8 @@ class BSharpTreeModel extends Model {
   BSharpTree? _lastTransitionTree;
   List<BSharpTreeTransition> _transitions = [];
   int _currentFrame = 0;
-  String _currentUuid = "";
+  //String _currentUuid = "";
+  BSharpTreeCommand? commandInExecution;
 
   BSharpTree? get currentTree => _transitions.isEmpty
       ? _lastTransitionTree
@@ -28,7 +29,7 @@ class BSharpTreeModel extends Model {
   BSharpTreeModel.copyWith(
       this._baseTree,
       this._currentFrame,
-      this._currentUuid,
+      this.commandInExecution,
       this._lastTransitionTree,
       this._transitions,
       super.name,
@@ -36,7 +37,7 @@ class BSharpTreeModel extends Model {
 
   (int, Model) executeCommand(BSharpTreeCommand command) {
     var functionToExecute = getFunctionFromCommand(command);
-    if (_canExecuteCommand(command.uuid)) {
+    if (_canExecuteCommand(command)) {
       if (isInTransition()) {
         //El arbol está en transicion
         _currentFrame++;
@@ -46,7 +47,8 @@ class BSharpTreeModel extends Model {
       } else {
         //Arranca una transición
         _lastTransitionTree = _baseTree.clone();
-        _currentUuid = command.uuid;
+        //_currentUuid = command.uuid;
+        commandInExecution = command;
         _currentFrame = 0;
         functionToExecute.call(_baseTree);
         _transitions = _baseTree.getTransitions();
@@ -94,9 +96,9 @@ class BSharpTreeModel extends Model {
     }
   }*/
 
-  bool _canExecuteCommand(uuid) {
-    return (_currentUuid != uuid && !isInTransition()) ||
-        (_currentUuid == uuid && isInTransition());
+  bool _canExecuteCommand(BSharpTreeCommand command) {
+    return (commandInExecution != command && !isInTransition()) ||
+        (commandInExecution == command && isInTransition());
   }
 
   bool isInTransition() {
@@ -108,7 +110,7 @@ class BSharpTreeModel extends Model {
     return BSharpTreeModel.copyWith(
         _baseTree.clone(),
         _currentFrame,
-        _currentUuid,
+        commandInExecution,
         _lastTransitionTree?.clone(),
         List.of(_transitions),
         name,
