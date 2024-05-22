@@ -9,16 +9,7 @@ class BSharpTreeModel extends Model {
   BSharpTree? _lastTransitionTree;
   List<BSharpTreeTransition> _transitions = [];
   int _currentFrame = 0;
-  //String _currentUuid = "";
   BSharpTreeCommand? commandInExecution;
-
-  BSharpTree? get currentTree => _transitions.isEmpty
-      ? _lastTransitionTree
-      : _transitions[_currentFrame].transitionTree ?? _lastTransitionTree;
-
-  BSharpTreeTransition? get currentTransition =>
-      _transitions.isNotEmpty ? _transitions[_currentFrame] : null;
-  int get _pendingFrames => _transitions.length - _currentFrame - 1;
 
   BSharpTreeModel(String name, int treeCapacity, List<int> initialValues)
       : _baseTree = BSharpTree<num>(treeCapacity),
@@ -32,8 +23,16 @@ class BSharpTreeModel extends Model {
       this.commandInExecution,
       this._lastTransitionTree,
       this._transitions,
-      super.name,
-      super.extensionId);
+      super.extensionId,
+      super.name);
+
+  BSharpTree? get currentTree => _transitions.isEmpty
+      ? _lastTransitionTree
+      : _transitions[_currentFrame].transitionTree ?? _lastTransitionTree;
+
+  BSharpTreeTransition? get currentTransition =>
+      _transitions.isNotEmpty ? _transitions[_currentFrame] : null;
+  int get _pendingFrames => _transitions.length - _currentFrame - 1;
 
   (int, Model) executeCommand(BSharpTreeCommand command) {
     var functionToExecute = getFunctionFromCommand(command);
@@ -63,39 +62,6 @@ class BSharpTreeModel extends Model {
     }
   }
 
-  /*(int, Model) executeInsertion(String uuid, num value) {
-    if (_canExecuteCommand(uuid)) {
-      if (isInTransition()) {
-        //El arbol está en transicion
-        _currentFrame++;
-        if (_transitions[_currentFrame].hasTree()) {
-          _lastTransitionTree = _transitions[_currentFrame].transitionTree!;
-        }
-        /*if (_currentFrame == _transitions.length - 1) {
-          //finaliza la transicion
-          //_transitions = [];
-          //_currentFrame = 0;
-          //_currentUuid = "";
-          return (0, this);
-        }*/
-      } else {
-        //Arranca una transición
-        _lastTransitionTree = _baseTree.clone();
-        _currentUuid = uuid;
-        _currentFrame = 0;
-        _baseTree.insert(value);
-        _transitions = _baseTree.getTransitions();
-        if (_transitions.firstOrNull?.transitionTree != null) {
-          _lastTransitionTree = _transitions.first.transitionTree;
-        }
-      }
-      return (_pendingFrames, this);
-    } else {
-      throw UnsupportedError(
-          "cant execute a command while another command is on transition");
-    }
-  }*/
-
   bool _canExecuteCommand(BSharpTreeCommand command) {
     return (commandInExecution != command && !isInTransition()) ||
         (commandInExecution == command && isInTransition());
@@ -108,13 +74,13 @@ class BSharpTreeModel extends Model {
   @override
   Model clone() {
     return BSharpTreeModel.copyWith(
-        _baseTree.clone(),
+        _baseTree,
         _currentFrame,
         commandInExecution,
         _lastTransitionTree?.clone(),
         List.of(_transitions),
-        name,
-        extensionId);
+        extensionId,
+        name);
   }
 
   void Function(BSharpTree<Comparable> tree) getFunctionFromCommand(

@@ -14,7 +14,7 @@ abstract class BSharpTreeCommand extends ModelCommand {
 
   @override
   Result call(Model model, CommandContext context) {
-    BSharpTreeModel treeModel = model as BSharpTreeModel;
+    BSharpTreeModel treeModel = (model.clone()) as BSharpTreeModel;
 
     int pendingFrames;
     Model? resultModel;
