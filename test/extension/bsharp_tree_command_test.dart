@@ -33,6 +33,7 @@ void main() {
     var command = BSharpTreeInsertCommand(10, "modelName");
     when(() => treeModelMock.executeCommand(command))
         .thenReturn((0, resultTreeModelMock));
+    when(() => treeModelMock.clone()).thenReturn(treeModelMock);
 
     var commandResult = command.call(treeModelMock, commandContextMock);
 
@@ -45,6 +46,7 @@ void main() {
     var command = BSharpTreeRemoveCommand(10, "modelName");
     when(() => treeModelMock.executeCommand(command))
         .thenReturn((0, resultTreeModelMock));
+    when(() => treeModelMock.clone()).thenReturn(treeModelMock);
 
     var commandResult = command.call(treeModelMock, commandContextMock);
 
@@ -57,6 +59,7 @@ void main() {
     var command = BSharpTreeInsertCommand(10, "modelName");
     when(() => treeModelMock.executeCommand(command))
         .thenReturn((4, resultTreeModelMock));
+    when(() => treeModelMock.clone()).thenReturn(treeModelMock);
 
     var commandResult = command.call(treeModelMock, commandContextMock);
 
@@ -69,6 +72,7 @@ void main() {
     var command = BSharpTreeRemoveCommand(10, "modelName");
     when(() => treeModelMock.executeCommand(command))
         .thenReturn((4, resultTreeModelMock));
+    when(() => treeModelMock.clone()).thenReturn(treeModelMock);
 
     var commandResult = command.call(treeModelMock, commandContextMock);
 
