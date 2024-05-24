@@ -59,24 +59,16 @@ class _TreeWidgetState extends State<TreeWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
-            height: 30,
+            width: 180,
+            height: 20,
             child: FittedBox(
-              fit: BoxFit.contain,
+              fit: BoxFit.fitHeight,
+              alignment: Alignment.centerLeft,
               child: Text(widget.commandInExecution != null
                   ? widget.commandInExecution.toString()
                   : ""),
             ),
           ),
-          SizedBox(
-            width: 120,
-            height: 20,
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: Text(
-                  "Free nodes: ${widget.tree.freeNodesIds.isNotEmpty ? widget.tree.freeNodesIds : ""}"),
-            ),
-          )
         ],
       ),
       Row(
@@ -91,6 +83,23 @@ class _TreeWidgetState extends State<TreeWidget> {
               alignment: Alignment.centerLeft,
               child: Text(widget.currentTransition != null
                   ? widget.currentTransition.toString()
+                  : ""),
+            ),
+          ),
+        ],
+      ),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 120,
+            height: 20,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              alignment: Alignment.centerLeft,
+              child: Text(widget.tree.freeNodesIds.isNotEmpty
+                  ? "Free nodes: ${widget.tree.freeNodesIds}"
                   : ""),
             ),
           ),
