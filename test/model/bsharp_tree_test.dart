@@ -249,13 +249,13 @@ void main() {
       expect(transitions[9],
           predicate<NodeOverflow>((t) => t.targetId == "0-1" && t.hasTree()));
       expect(transitions[10],
-          predicate<NodeCreation>((t) => t.targetId == "9" && !t.hasTree()));
-      expect(transitions[11],
           predicate<NodeCreation>((t) => t.targetId == "8" && !t.hasTree()));
+      expect(transitions[11],
+          predicate<NodeCreation>((t) => t.targetId == "9" && !t.hasTree()));
       expect(transitions[12],
-          predicate<NodeWritten>((t) => t.targetId == "9" && !t.hasTree()));
-      expect(transitions[13],
           predicate<NodeWritten>((t) => t.targetId == "8" && !t.hasTree()));
+      expect(transitions[13],
+          predicate<NodeWritten>((t) => t.targetId == "9" && !t.hasTree()));
       expect(transitions[14],
           predicate<NodeWritten>((t) => t.targetId == "0-1" && t.hasTree()));
     });
@@ -599,16 +599,18 @@ void main() {
       var tree = BSharpTree<num>(3);
       tree.insertAll([10, 22, 150, 166, 210, 233, 370, 421]);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
 
       tree.remove(22);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting);
       expect(depthAfterInserting, depthBeforeInserting);
+
+      expect(tree.freeNodesIds, isEmpty);
 
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(8));
@@ -636,15 +638,18 @@ void main() {
       tree.insertAll([10, 22, 150, 166, 233, 370]);
       tree.remove(233);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
 
       tree.remove(166);
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting);
       expect(depthAfterInserting, depthBeforeInserting);
+
+      expect(tree.freeNodesIds, isEmpty);
+
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(8));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
@@ -671,16 +676,19 @@ void main() {
       tree.insertAll([10, 22, 150, 166, 210]);
       tree.remove(166);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
 
       tree.remove(150);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting - 2);
       expect(depthAfterInserting, depthBeforeInserting - 1);
+
+      expect(tree.freeNodesIds, containsAll(["2", "3"]));
+
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(10));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
@@ -711,16 +719,19 @@ void main() {
       tree.insertAll([10, 22, 150, 166, 210]);
       tree.remove(166);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
 
       tree.remove(10);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting - 2);
       expect(depthAfterInserting, depthBeforeInserting - 1);
+
+      expect(tree.freeNodesIds, containsAll(["2", "3"]));
+
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(10));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
@@ -751,15 +762,18 @@ void main() {
       tree.insertAll([10, 22, 150, 166, 210, 233, 370]);
       tree.remove(233);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
       tree.remove(150);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting - 1);
       expect(depthAfterInserting, depthBeforeInserting);
+
+      expect(tree.freeNodesIds, contains("4"));
+
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(11));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
@@ -792,15 +806,18 @@ void main() {
       tree.insertAll([10, 22, 150, 166, 210, 233, 370]);
       tree.remove(233);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
       tree.remove(10);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting - 1);
       expect(depthAfterInserting, depthBeforeInserting);
+
+      expect(tree.freeNodesIds, contains("4"));
+
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(11));
       expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
@@ -833,16 +850,18 @@ void main() {
       tree.insertAll([10, 22, 150, 166, 210, 233, 370]);
       tree.remove(233);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
 
       tree.remove(210);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting - 1);
       expect(depthAfterInserting, depthBeforeInserting);
+
+      expect(tree.freeNodesIds, contains("3"));
 
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(11));
@@ -875,16 +894,18 @@ void main() {
       var tree = BSharpTree<num>(2);
       tree.insertAll([10, 22, 150, 166, 210, 233, 370]);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
 
       tree.remove(22);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting - 1);
       expect(depthAfterInserting, depthBeforeInserting);
+
+      expect(tree.freeNodesIds, contains("4"));
 
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(15));
@@ -932,16 +953,18 @@ void main() {
       tree.remove(166);
       tree.remove(121);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
 
       tree.remove(210);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting - 1);
       expect(depthAfterInserting, depthBeforeInserting);
+
+      expect(tree.freeNodesIds, contains("3"));
 
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(15));
@@ -987,15 +1010,17 @@ void main() {
       tree.remove(121);
       tree.remove(75);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
       tree.remove(22);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting - 3);
       expect(depthAfterInserting, depthBeforeInserting - 1);
+
+      expect(tree.freeNodesIds, containsAll(["5", "6", "7"]));
 
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(17));
@@ -1046,14 +1071,17 @@ void main() {
       tree.remove(121);
       tree.remove(75);
 
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
       tree.remove(210);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting - 3);
       expect(depthAfterInserting, depthBeforeInserting - 1);
+
+      expect(tree.freeNodesIds, containsAll(["3", "6", "7"]));
 
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(17));
@@ -1100,14 +1128,17 @@ void main() {
       var tree = BSharpTree<num>(3);
       tree.insertAll([10, 22, 150, 166, 210, 233, 370]);
 
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
       tree.remove(22);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting);
       expect(depthAfterInserting, depthBeforeInserting);
+
+      expect(tree.freeNodesIds, isEmpty);
 
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(10));
@@ -1139,15 +1170,17 @@ void main() {
       tree.insertAll([10, 22, 150, 166, 210, 75, 102, 56]);
       tree.remove(166);
 
-      //int nodeQuantityBeforeInserting = tree.nodesQuantity;
+      int nodeQuantityBeforeInserting = tree.nodesQuantity;
       int depthBeforeInserting = tree.depth;
       tree.remove(150);
 
-      //int nodeQuantityAfterInserting = tree.nodesQuantity;
+      int nodeQuantityAfterInserting = tree.nodesQuantity;
       int depthAfterInserting = tree.depth;
 
-      //expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting + 2);
+      expect(nodeQuantityAfterInserting, nodeQuantityBeforeInserting);
       expect(depthAfterInserting, depthBeforeInserting);
+
+      expect(tree.freeNodesIds, isEmpty);
 
       var transitions = tree.getTransitions();
       expect(transitions, hasLength(10));
@@ -1225,6 +1258,51 @@ void main() {
       expect(allNodesByLevel[0]!.length, 8);
       expect(allNodesByLevel[1]!.length, 2);
       expect(allNodesByLevel[2]!.length, 1);
+    });
+  });
+
+  group("Insert and remove values - ", () {
+    test("reuse of node id after release it", () {
+      var tree = BSharpTree<num>(2);
+      tree.insertAll([22, 36, 150, 166, 210, 121, 75, 17, 45]);
+      tree.remove(166);
+      tree.remove(121);
+      tree.remove(210);
+
+      var freeNodeIdsBeforeInsert = List.of(tree.freeNodesIds);
+      var nodeQuantityBeforeInserting = tree.nodesQuantity;
+
+      tree.insert(44);
+      tree.insert(5);
+
+      expect(tree.freeNodesIds, isEmpty);
+      expect(tree.nodesQuantity, nodeQuantityBeforeInserting + 1);
+      expect(
+          tree.transitions[7],
+          predicate<NodeReuse>(
+              (t) => t.targetId == freeNodeIdsBeforeInsert[0]));
+    });
+
+    test("new node if there's no free nodes", () {
+      var tree = BSharpTree<num>(2);
+      tree.insertAll([22, 36, 150, 166, 210, 121, 75, 17, 45]);
+      tree.remove(166);
+      tree.remove(121);
+      tree.remove(210);
+
+      var lastNodeIdBeforeInsert = tree.lastNodeId;
+
+      tree.insert(44);
+      tree.insert(5);
+
+      expect(tree.freeNodesIds, isEmpty);
+      tree.insert(39);
+
+      expect(tree.lastNodeId, lastNodeIdBeforeInsert + 1);
+      expect(
+          tree.transitions[7],
+          predicate<NodeCreation>(
+              (t) => t.targetId == (lastNodeIdBeforeInsert + 1).toString()));
     });
   });
 }

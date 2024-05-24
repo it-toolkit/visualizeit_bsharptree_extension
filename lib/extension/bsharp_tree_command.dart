@@ -62,7 +62,7 @@ class BSharpTreeInsertCommand extends BSharpTreeCommand {
             ""); //TODO entender para que es necesario el modelName acá
   @override
   String toString() {
-    return "Insertando valor: $value";
+    return "Inserting value: $value";
   }
 }
 
@@ -84,6 +84,6 @@ class BSharpTreeRemoveCommand extends BSharpTreeCommand {
             ""); //TODO entender para que es necesario el modelName acá
   @override
   String toString() {
-    return "Removiendo valor: $value";
+    return "Removing value: $value";
   }
 }

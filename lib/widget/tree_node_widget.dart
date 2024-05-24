@@ -125,7 +125,7 @@ class TreeNodeWidget extends StatelessWidget {
     return ArrowElement(
         id: node.id,
         child: Container(
-            width: max(50, 30 + node.length() * 50),
+            width: max(80, 30 + node.length() * 50),
             height: 65,
             decoration: BoxDecoration(
                 border: Border.all(
@@ -193,7 +193,9 @@ class TreeNodeWidget extends StatelessWidget {
         transition is NodeSplit ||
         transition is NodeFusion) {
       return Colors.blue;
-    } else if (transition is NodeWritten) {
+    } else if (transition is NodeWritten ||
+        transition is NodeCreation ||
+        transition is NodeReuse) {
       return Colors.green;
     }
     return Colors.black;
@@ -202,21 +204,25 @@ class TreeNodeWidget extends StatelessWidget {
   String getNodeTextForTransition() {
     var text = "";
     if (transition is NodeRead) {
-      text = "Leido";
+      text = "Read";
     } else if (transition is NodeWritten) {
-      text = "Escrito";
+      text = "Written";
     } else if (transition is NodeBalancing) {
-      text = "Balanceando";
+      text = "Balancing";
     } else if (transition is NodeOverflow) {
       text = "Overflow";
     } else if (transition is NodeUnderflow) {
       text = "Underflow";
     } else if (transition is NodeSplit) {
-      text = "Dividiendo";
+      text = "Splitting";
     } else if (transition is NodeFusion) {
-      text = "Fusionando";
+      text = "Fusing";
     } else if (transition is NodeRelease) {
-      text = "Liberando";
+      text = "Releasing";
+    } else if (transition is NodeReuse) {
+      text = "Reused";
+    } else if (transition is NodeCreation) {
+      text = "Created";
     }
     return text;
   }
@@ -246,7 +252,7 @@ class TreeNodeWidget extends StatelessWidget {
   }
 
   Color getColorByCapacityState(BSharpNode node) {
-    if (node.isOverflowed() || node.isOverflowed()) {
+    if (node.isOverflowed()) {
       return Colors.red;
     } else if (node.isAtMaxCapacity()) {
       return Colors.yellow;

@@ -10,16 +10,18 @@ class BSharpTree<T extends Comparable<T>> {
   BSharpNode<T>? _rootNode;
   final int maxCapacity;
   int nodesQuantity = 0;
+  int lastNodeId = 0;
 
   List<BSharpTreeTransition> transitions = [];
 
   final logger = Logger("extension.bsharptree.model");
 
-  var freeNodesIds = [];
+  List<String> freeNodesIds = [];
 
   BSharpTree(this.maxCapacity);
 
-  BSharpTree._copy(this._rootNode, this.maxCapacity, this.nodesQuantity);
+  BSharpTree._copy(this._rootNode, this.maxCapacity, this.nodesQuantity,
+      this.freeNodesIds, this.lastNodeId);
 
   int get _rootMaxCapacity => (4 * maxCapacity) ~/ 3;
   int get depth => _rootNode?.level ?? 0;
@@ -37,12 +39,12 @@ class BSharpTree<T extends Comparable<T>> {
     transitions = [];
     logger.debug(() => "insertando value: $value");
     if (_rootNode == null) {
-      _rootNode = BSharpSequentialNode("0-1", 0, _rootMaxCapacity, value);
+      //_rootNode = BSharpSequentialNode("0-1", 0, _rootMaxCapacity, value);
+      _rootNode = _buildRootSequentialNode([value]);
       nodesQuantity = 2;
-      transitions.addAll([
-        NodeCreation(targetId: _rootNode!.id),
-        NodeWritten(targetId: _rootNode!.id, transitionTree: this)
-      ]);
+      lastNodeId = 1;
+      transitions
+          .add(NodeWritten(targetId: _rootNode!.id, transitionTree: this));
     } else {
       if (_rootNode!.isLevelZero) {
         //el unico nodo del arbol es la raiz
@@ -56,38 +58,27 @@ class BSharpTree<T extends Comparable<T>> {
           //Si se supera la maxima capacidad de la raiz
           transitions.add(
               NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-          var leftNode = BSharpSequentialNode<T>.createNode(
-              (nodesQuantity++).toString(),
-              0,
-              maxCapacity,
-              node.values.sublist(0, node.length() ~/ 2));
-          var rightNode = BSharpSequentialNode<T>.createNode(
-              (nodesQuantity++).toString(),
-              0,
-              maxCapacity,
-              node.values.sublist(node.length() ~/ 2));
-          /*var rightNode = BSharpSequentialNode<T>.createNode(
-              (nodesQuantity++).toString(), 0, maxCapacity, []);
-          transitions.add(NodeCreation(
-              targetId: rightNode.id, transitionTree: this.clone()));*/
-
-          /*var leftNode = BSharpSequentialNode<T>.createNode(
-              (nodesQuantity++).toString(), 0, maxCapacity, []);
-          transitions.add(NodeCreation(
-              targetId: leftNode.id, transitionTree: this.clone()));
-          rightNode.addAllToNode(node.values.sublist(node.length() ~/ 2));
-          leftNode.addAllToNode(node.values.sublist(0, node.length() ~/ 2));*/
-
+          /*var leftNode = BSharpSequentialNode<T>.createNode(getNextNodeId(), 0,
+              maxCapacity, node.values.sublist(0, node.length() ~/ 2));
+          nodesQuantity++;*/
+          /*var rightNode = BSharpSequentialNode<T>.createNode(getNextNodeId(), 0,
+              maxCapacity, node.values.sublist(node.length() ~/ 2));
+          nodesQuantity++;*/
+          var leftNode = _buildSequentialNode(node.getFirstHalfOfValues());
+          var rightNode = _buildSequentialNode(node.getLastHalfOfValues());
           leftNode.nextNode = rightNode;
           //Crear el nuevo nodo indice raiz que va a reemplazar al nodo secuencia
-          var newRoot = BSharpIndexNode<T>("0-1", 1, _rootMaxCapacity,
-              rightNode.values.first, leftNode, rightNode);
+          /*var newRoot = BSharpIndexNode<T>("0-1", 1, _rootMaxCapacity,
+              rightNode.values.first, leftNode, rightNode);*/
+          var newRoot = _buildRootIndexNode(
+              leftNode, [IndexRecord(rightNode.values.first, rightNode)], 1,
+              isReplacingRoot: true);
 
           newRoot.fixFamilyRelations();
           _rootNode = newRoot;
           transitions.addAll([
-            NodeCreation(targetId: leftNode.id),
-            NodeCreation(targetId: rightNode.id),
+            //NodeCreation(targetId: leftNode.id),
+            //NodeCreation(targetId: rightNode.id),
             NodeWritten(targetId: leftNode.id, transitionTree: this),
             NodeWritten(targetId: rightNode.id),
             NodeWritten(targetId: newRoot.id, transitionTree: this)
@@ -141,7 +132,6 @@ class BSharpTree<T extends Comparable<T>> {
   Map<int, List<BSharpNode<T>>> getAllNodesByLevel() {
     Map<int, List<BSharpNode<T>>> allNodesMap = {};
     if (_rootNode != null) {
-      //allNodesMap.putIfAbsent(_rootNode!.level, () => [_rootNode!]);
       addNodesByLevelRecursively(allNodesMap, _rootNode!);
     } else {
       allNodesMap = {0: List.empty()};
@@ -295,9 +285,12 @@ class BSharpTree<T extends Comparable<T>> {
           if (node.parent == null && node.length() == 0) {
             BSharpNode<T> leftChild = node.leftNode;
             if (node.leftNode.isLevelZero) {
+              //Hay que convertir el nodo raiz de un index node a un sequential node
               leftChild = leftChild as BSharpSequentialNode<T>;
-              _rootNode = BSharpSequentialNode.createNode(
-                  "0-1", 0, _rootMaxCapacity, leftChild.values);
+              /*_rootNode = BSharpSequentialNode.createNode(
+                  "0-1", 0, _rootMaxCapacity, leftChild.values);*/
+              _rootNode = _buildRootSequentialNode(leftChild.values,
+                  isReplacingRoot: true);
             } else {
               leftChild = leftChild as BSharpIndexNode<T>;
               node.leftNode = leftChild.leftNode;
@@ -305,10 +298,7 @@ class BSharpTree<T extends Comparable<T>> {
               node.level = node.level - 1;
               node.fixFamilyRelations();
             }
-
-            //_rootNode!.parent = null;
-            //_rootNode!.leftSibling = null;
-            //_rootNode!.rightSibling = null;
+            _release(leftChild);
             transitions.add(NodeRelease(targetId: leftChild.id));
           } else {
             node.fixFamilyRelations();
@@ -328,18 +318,24 @@ class BSharpTree<T extends Comparable<T>> {
   /// the new sibling and the former root node.
   void _splitIndexRootNode(BSharpIndexNode<T> node) {
     var recordToPromote = node.rightNodes.elementAt(node.length() ~/ 2);
-    var newLeftNode = BSharpIndexNode<T>.createNode(
-        (nodesQuantity++).toString(),
+    /*var newLeftNode = BSharpIndexNode<T>.createNode(
+        getNextNodeId(),
         node.level,
         maxCapacity,
         node.leftNode,
         node.rightNodes.sublist(0, node.length() ~/ 2));
+    nodesQuantity++;
     var newRightNode = BSharpIndexNode<T>.createNode(
-        (nodesQuantity++).toString(),
+        getNextNodeId(),
         node.level,
         maxCapacity,
         recordToPromote.rightNode,
         node.rightNodes.sublist((node.length() ~/ 2) + 1));
+    nodesQuantity++;*/
+    var newLeftNode = _buildIndexNode(node.leftNode,
+        node.rightNodes.sublist(0, node.length() ~/ 2), node.level);
+    var newRightNode = _buildIndexNode(recordToPromote.rightNode,
+        node.rightNodes.sublist((node.length() ~/ 2) + 1), node.level);
 
     node.leftNode = newLeftNode;
     node.rightNodes = [IndexRecord(recordToPromote.key, newRightNode)];
@@ -351,10 +347,10 @@ class BSharpTree<T extends Comparable<T>> {
 
     //Seteamos el nuevo nodo como la raiz
     transitions.addAll([
-      NodeCreation(targetId: newRightNode.id),
-      NodeCreation(targetId: newLeftNode.id),
-      NodeWritten(targetId: newRightNode.id),
+      //NodeCreation(targetId: newRightNode.id),
+      //NodeCreation(targetId: newLeftNode.id),
       NodeWritten(targetId: newLeftNode.id),
+      NodeWritten(targetId: newRightNode.id),
       NodeWritten(
           targetId: node.id,
           transitionTree: this.clone()) //TODO ver si va esto aca
@@ -425,6 +421,7 @@ class BSharpTree<T extends Comparable<T>> {
       BSharpIndexNode<T> siblingNode, BSharpIndexNode<T> parent) {
     transitions.add(
         NodeSplit(targetId: node.id, firstOptionalTargetId: siblingNode.id));
+
     var siblingRecord = parent.findIndexRecordById(siblingNode.id);
     var allIndexRecords = node.rightNodes;
     var parentIndexRecord =
@@ -444,18 +441,24 @@ class BSharpTree<T extends Comparable<T>> {
     var secondPromotedIndexRecord =
         allIndexRecords.elementAt((allIndexRecords.length * 2) ~/ 3);
 
-    var newNode = BSharpIndexNode<T>.createNode(
-        (nodesQuantity++).toString(),
+    /*var newNode = BSharpIndexNode<T>.createNode(
+        getNextNodeId(),
         node.level,
         maxCapacity,
         secondPromotedIndexRecord.rightNode,
         allIndexRecords.sublist(((allIndexRecords.length * 2) ~/ 3) + 1));
+        nodesQuantity++;*/
+    var newNode = _buildIndexNode(
+        secondPromotedIndexRecord.rightNode,
+        allIndexRecords.sublist(((allIndexRecords.length * 2) ~/ 3) + 1),
+        node.level);
+
     node.fixFamilyRelations();
     siblingNode.fixFamilyRelations();
     newNode.fixFamilyRelations();
 
     transitions.addAll([
-      NodeCreation(targetId: newNode.id),
+      //NodeCreation(targetId: newNode.id),
       NodeWritten(targetId: newNode.id),
       NodeWritten(targetId: node.id),
       NodeWritten(targetId: siblingNode.id, transitionTree: this.clone())
@@ -500,10 +503,14 @@ class BSharpTree<T extends Comparable<T>> {
     allKeys.sort();
     node.values = allKeys.sublist(0, allKeys.length ~/ 3);
 
-    var newNode = BSharpSequentialNode<T>.createNode(
-        (nodesQuantity++).toString(),
+    /*var newNode = BSharpSequentialNode<T>.createNode(
+        getNextNodeId(),
         0,
         maxCapacity,
+        allKeys.sublist(allKeys.length ~/ 3, (allKeys.length * 2) ~/ 3));
+      nodesQuantity++;
+    */
+    var newNode = _buildSequentialNode(
         allKeys.sublist(allKeys.length ~/ 3, (allKeys.length * 2) ~/ 3));
 
     newNode.nextNode = siblingNode;
@@ -514,7 +521,7 @@ class BSharpTree<T extends Comparable<T>> {
       siblingRecord.key = siblingNode.firstKey();
     }
     transitions.addAll([
-      NodeCreation(targetId: newNode.id),
+      //NodeCreation(targetId: newNode.id),
       NodeWritten(targetId: newNode.id, transitionTree: this.clone())
     ]); //TODO acá se deberian escribir tambien los otros nodos
     return IndexRecord(newNode.firstKey(), newNode);
@@ -534,7 +541,7 @@ class BSharpTree<T extends Comparable<T>> {
   /// Prints a single node info and recursively calls itself to print all the children's node info
   void _printNode(BSharpNode<T> node, int depth, StringBuffer buffer) {
     String padding = "${"--" * depth}>";
-    String nodeId = "${node.id}".padRight(2);
+    String nodeId = node.id.padRight(2);
     if (!node.isLevelZero) {
       var indexNode = node as BSharpIndexNode<T>;
       buffer.writeln(
@@ -566,6 +573,8 @@ class BSharpTree<T extends Comparable<T>> {
       nodeRecord.key = node.firstKey();
     }
 
+    _release(siblingNode);
+
     transitions.addAll([
       NodeFusion(targetId: node.id, firstOptionalTargetId: siblingNode.id),
       NodeWritten(targetId: node.id),
@@ -589,6 +598,8 @@ class BSharpTree<T extends Comparable<T>> {
       node.addIndexRecordToNode(nodeToMove);
     }
     node.fixFamilyRelations();
+
+    _release(siblingNode);
 
     transitions.addAll([
       NodeFusion(targetId: node.id, firstOptionalTargetId: siblingNode.id),
@@ -678,9 +689,7 @@ class BSharpTree<T extends Comparable<T>> {
       rightSiblingRecord.key = rightSiblingNode.firstKey();
     }
 
-    /*if (nodeRecord != null) {
-      nodeRecord.key = node.firstKey();
-    }*/
+    _release(node);
 
     transitions.addAll([
       NodeFusion(
@@ -932,7 +941,8 @@ class BSharpTree<T extends Comparable<T>> {
       rootNode = _cloneRecursively(_rootNode!);
     }
 
-    return BSharpTree<T>._copy(rootNode, maxCapacity, nodesQuantity);
+    return BSharpTree<T>._copy(rootNode, maxCapacity, nodesQuantity,
+        List.of(freeNodesIds), lastNodeId);
   }
 
   BSharpNode<T> _cloneRecursively(BSharpNode<T> node) {
@@ -959,4 +969,85 @@ class BSharpTree<T extends Comparable<T>> {
       'rootNode': rootNodeMap
     };
   }*/
+
+  BSharpSequentialNode<T> _buildSequentialNode(List<T> values,
+      {String? givenNodeId, int? givenCapacity, bool isReplacingRoot = false}) {
+    var nodeId = "";
+    var hasReused = false;
+
+    //Si no me llega un nodeId hay que obtenerlo, reusando uno o creando uno nuevo
+    if (givenNodeId == null) {
+      (nodeId, hasReused) = getNextNodeIdWithReuse();
+    } else {
+      nodeId = givenNodeId;
+    }
+
+    var node = BSharpSequentialNode.createNode(
+        nodeId, 0, givenCapacity ?? maxCapacity, values);
+
+    // Si no se está reemplazando la raiz, es un nuevo nodo hoja que hay que agregar al arbol
+    if (!isReplacingRoot) {
+      nodesQuantity++;
+      transitions.add(hasReused
+          ? NodeReuse(targetId: nodeId)
+          : NodeCreation(targetId: nodeId));
+    }
+    return node;
+  }
+
+  BSharpIndexNode<T> _buildRootIndexNode(
+      BSharpNode<T> leftNode, List<IndexRecord<T>> rightNodes, int level,
+      {bool isReplacingRoot = false}) {
+    return _buildIndexNode(leftNode, rightNodes, level,
+        givenNodeId: "0-1",
+        givenCapacity: _rootMaxCapacity,
+        isReplacingRoot: isReplacingRoot);
+  }
+
+  BSharpIndexNode<T> _buildIndexNode(
+      BSharpNode<T> leftNode, List<IndexRecord<T>> rightNodes, int level,
+      {String? givenNodeId, int? givenCapacity, bool isReplacingRoot = false}) {
+    var nodeId = "";
+    var hasReused = false;
+
+    //Si no me llega un nodeId hay que obtenerlo, reusando uno o creando uno nuevo
+    if (givenNodeId == null) {
+      (nodeId, hasReused) = getNextNodeIdWithReuse();
+    } else {
+      nodeId = givenNodeId;
+    }
+
+    var node = BSharpIndexNode.createNode(
+        nodeId, level, givenCapacity ?? maxCapacity, leftNode, rightNodes);
+
+    if (!isReplacingRoot) {
+      nodesQuantity++;
+      transitions.add(hasReused
+          ? NodeReuse(targetId: nodeId)
+          : NodeCreation(targetId: nodeId));
+    }
+    return node;
+  }
+
+  BSharpSequentialNode<T> _buildRootSequentialNode(List<T> values,
+      {bool isReplacingRoot = false}) {
+    return _buildSequentialNode(values,
+        givenCapacity: _rootMaxCapacity,
+        givenNodeId: "0-1",
+        isReplacingRoot: isReplacingRoot);
+  }
+
+  (String, bool) getNextNodeIdWithReuse() {
+    if (freeNodesIds.isNotEmpty) {
+      return (freeNodesIds.removeAt(0), true);
+    } else {
+      lastNodeId++;
+      return (lastNodeId.toString(), false);
+    }
+  }
+
+  void _release(BSharpNode<T> node) {
+    freeNodesIds.add(node.id);
+    nodesQuantity--;
+  }
 }

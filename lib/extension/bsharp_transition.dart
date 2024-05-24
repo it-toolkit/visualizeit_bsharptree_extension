@@ -51,7 +51,18 @@ class NodeCreation extends BSharpTreeTransition {
 
   @override
   String toString() {
-    return "Creando nodo: ${super.toString()}";
+    return "Creating node: ${super.toString()}";
+  }
+}
+
+class NodeReuse extends BSharpTreeTransition {
+  NodeReuse({required super.targetId, super.transitionTree}) {
+    logger.debug(() => "Reutilizando nodo con id: $_targetId");
+  }
+
+  @override
+  String toString() {
+    return "Reusing node: ${super.toString()}";
   }
 }
 
@@ -61,7 +72,7 @@ class NodeRead extends BSharpTreeTransition {
   }
   @override
   String toString() {
-    return "Leyendo nodo: ${super.toString()}";
+    return "Node read: ${super.toString()}";
   }
 }
 
@@ -71,7 +82,7 @@ class NodeWritten extends BSharpTreeTransition {
   }
   @override
   String toString() {
-    return "Escribiendo nodo: ${super.toString()}";
+    return "Node Written: ${super.toString()}";
   }
 }
 
@@ -81,7 +92,7 @@ class NodeOverflow extends BSharpTreeTransition {
   }
   @override
   String toString() {
-    return "Nodo en overflow: ${super.toString()}";
+    return "Overflowed node: ${super.toString()}";
   }
 }
 
@@ -91,7 +102,7 @@ class NodeUnderflow extends BSharpTreeTransition {
   }
   @override
   String toString() {
-    return "Nodo en underflow: ${super.toString()}";
+    return "Underflowed Node: ${super.toString()}";
   }
 }
 
@@ -110,7 +121,7 @@ class NodeBalancing extends BSharpTreeTransition {
   }
   @override
   String toString() {
-    return "Balanceando nodo: $_targetId con nodo $_firstOptionalTargetId ${secondOptionalTargetId != null ? "y nodo secondOptionalTargetId" : ""}";
+    return "Node balancing: $_targetId with $_firstOptionalTargetId ${secondOptionalTargetId != null ? "and $secondOptionalTargetId" : ""}";
   }
 }
 
@@ -121,7 +132,7 @@ class NodeSplit extends BSharpTreeTransition {
   }
   @override
   String toString() {
-    return "Dividiendo nodo: $_targetId con nodo $_firstOptionalTargetId";
+    return "Splitting node: $_targetId with $_firstOptionalTargetId";
   }
 }
 
@@ -139,7 +150,7 @@ class NodeFusion extends BSharpTreeTransition {
   }
   @override
   String toString() {
-    return "Fusionando nodo: $_targetId con nodo $_firstOptionalTargetId ${secondOptionalTargetId != null ? "y nodo secondOptionalTargetId" : ""}";
+    return "Fusing node: $_targetId with $_firstOptionalTargetId ${secondOptionalTargetId != null ? "and $secondOptionalTargetId" : ""}";
   }
 }
 
@@ -149,6 +160,6 @@ class NodeRelease extends BSharpTreeTransition {
   }
   @override
   String toString() {
-    return "Liberando nodo: ${super.toString()}";
+    return "Releasing node: ${super.toString()}";
   }
 }

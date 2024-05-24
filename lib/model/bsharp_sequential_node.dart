@@ -20,12 +20,8 @@ class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T> {
     values.sort();
   }
 
-  void addAllToNode(List<T> valuesToAdd) {
-    for (var valueToAdd in valuesToAdd) {
-      values.add(valueToAdd);
-    }
-    values.sort();
-  }
+  List<T> getFirstHalfOfValues() => values.sublist(0, length() ~/ 2);
+  List<T> getLastHalfOfValues() => values.sublist(length() ~/ 2);
 
   @override
   T firstKey() => values.first;

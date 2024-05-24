@@ -74,7 +74,7 @@ class _TreeWidgetState extends State<TreeWidget> {
             child: FittedBox(
               fit: BoxFit.contain,
               child: Text(
-                  "Nodos libres: ${widget.tree.freeNodesIds.isNotEmpty ? widget.tree.freeNodesIds : ""}"),
+                  "Free nodes: ${widget.tree.freeNodesIds.isNotEmpty ? widget.tree.freeNodesIds : ""}"),
             ),
           )
         ],
@@ -122,12 +122,9 @@ class _TreeWidgetState extends State<TreeWidget> {
               ]),
           child: Column(
             children: [
-              buildColorReferenceRow(
-                  Colors.cyan, "Nodo con capacidad disponible"),
-              buildColorReferenceRow(
-                  Colors.yellow, "Nodo al limite de capacidad"),
-              buildColorReferenceRow(
-                  Colors.red, "Nodo en Overflow / Underflow"),
+              buildColorReferenceRow(Colors.cyan, "Node with available space"),
+              buildColorReferenceRow(Colors.yellow, "Node at capacity limit"),
+              buildColorReferenceRow(Colors.red, "Overflowed node"),
             ],
           ),
         ),

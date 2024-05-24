@@ -46,7 +46,6 @@ class BSharpTreeModel extends Model {
       } else {
         //Arranca una transición
         _lastTransitionTree = _baseTree.clone();
-        //_currentUuid = command.uuid;
         commandInExecution = command;
         _currentFrame = 0;
         functionToExecute.call(_baseTree);
