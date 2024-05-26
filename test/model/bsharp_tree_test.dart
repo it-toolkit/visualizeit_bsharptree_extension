@@ -1305,4 +1305,37 @@ void main() {
               (t) => t.targetId == (lastNodeIdBeforeInsert + 1).toString()));
     });
   });
+
+  group("find tests", () {
+    test("find a value that's in the tree", () {
+      var tree = BSharpTree<num>(2);
+      tree.insertAll([10, 22, 150, 166, 210, 233, 370]);
+
+      var nodeId = tree.find(166);
+
+      expect(nodeId, "8");
+      var transitions = tree.getTransitions();
+      expect(transitions, hasLength(4));
+      expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "7"));
+      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "8"));
+      expect(transitions[3], predicate<NodeFound>((t) => t.targetId == "8"));
+    });
+
+    test("find a value that's not in the tree", () {
+      var tree = BSharpTree<num>(2);
+      tree.insertAll([10, 22, 150, 166, 210, 233, 370]);
+
+      var nodeId = tree.find(23);
+
+      expect(nodeId, "4");
+
+      var transitions = tree.getTransitions();
+      expect(transitions, hasLength(4));
+      expect(transitions[0], predicate<NodeRead>((t) => t.targetId == "0-1"));
+      expect(transitions[1], predicate<NodeRead>((t) => t.targetId == "6"));
+      expect(transitions[2], predicate<NodeRead>((t) => t.targetId == "4"));
+      expect(transitions[3], predicate<NodeFound>((t) => t.targetId == "4"));
+    });
+  });
 }

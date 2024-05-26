@@ -42,7 +42,8 @@ class BSharpTreeExtension extends DefaultScriptingExtension
           BSharpTreeInsertCommand.commandDefinition:
               BSharpTreeInsertCommand.build,
           BSharpTreeRemoveCommand.commandDefinition:
-              BSharpTreeRemoveCommand.build
+              BSharpTreeRemoveCommand.build,
+          BSharpTreeFindCommand.commandDefinition: BSharpTreeFindCommand.build,
         });
 
   @override

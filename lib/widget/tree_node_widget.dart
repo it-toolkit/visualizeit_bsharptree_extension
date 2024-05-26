@@ -110,6 +110,8 @@ class TreeNodeWidget extends StatelessWidget {
           transition is NodeUnderflow ||
           transition is NodeRelease) {
         return Colors.red;
+      } else if (transition is NodeFound) {
+        return Colors.green;
       }
     }
     return Colors.black;
@@ -145,7 +147,7 @@ class TreeNodeWidget extends StatelessWidget {
   List<Widget> buildComponentsContainers(List<Component> components) {
     var widgets = <Widget>[];
     if (transition != null) {
-      String text = getNodeTextForTransition();
+      String text = transition!.textForNodeWidget;
       Color textColor = getTextColorForTransition();
       widgets.add(Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -195,13 +197,14 @@ class TreeNodeWidget extends StatelessWidget {
       return Colors.blue;
     } else if (transition is NodeWritten ||
         transition is NodeCreation ||
-        transition is NodeReuse) {
+        transition is NodeReuse ||
+        transition is NodeFound) {
       return Colors.green;
     }
     return Colors.black;
   }
 
-  String getNodeTextForTransition() {
+  /*String getNodeTextForTransition() {
     var text = "";
     if (transition is NodeRead) {
       text = "Read";
@@ -225,7 +228,7 @@ class TreeNodeWidget extends StatelessWidget {
       text = "Created";
     }
     return text;
-  }
+  }*/
 
   static Widget _boxContainer(String text, Color color,
       {double margin = 0.0,

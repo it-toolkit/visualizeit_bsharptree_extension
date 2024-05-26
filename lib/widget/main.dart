@@ -35,10 +35,8 @@ class MyApp extends StatelessWidget {
       home: Scaffold(
         body: InteractiveViewer(
           clipBehavior: Clip.none,
-          child: TreeWidget(
-              tree,
-              NodeBalancing(targetId: "0-1", firstOptionalTargetId: "2"),
-              BSharpTreeInsertCommand(12, "modelName")),
+          child: TreeWidget(tree, NodeFound(targetId: "2"),
+              BSharpTreeFindCommand(12, "modelName")),
         ),
       ),
     );

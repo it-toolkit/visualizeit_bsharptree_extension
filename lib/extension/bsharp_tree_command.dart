@@ -1,4 +1,5 @@
 import 'package:uuid/uuid.dart';
+import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_extensions/common.dart';
 import 'package:visualizeit_extensions/logging.dart';
 import 'package:visualizeit_extensions/scripting.dart';
@@ -42,13 +43,19 @@ abstract class BSharpTreeCommand extends ModelCommand {
 
   @override
   int get hashCode => Object.hashAll([value, uuid, modelName]);
+
+  Function commandToFunction();
+
+  static CommandDefinition createBSharpTreeCommandDefinition(
+      String commandName) {
+    return CommandDefinition(BSharpTreeExtension.extensionId, commandName,
+        [CommandArgDef("value", ArgType.int)]);
+  }
 }
 
 class BSharpTreeInsertCommand extends BSharpTreeCommand {
-  static final commandDefinition = CommandDefinition(
-      BSharpTreeExtension.extensionId,
-      "bsharptree-insert",
-      [CommandArgDef("value", ArgType.int)]);
+  static final commandDefinition =
+      BSharpTreeCommand.createBSharpTreeCommandDefinition("bsharptree-insert");
 
   BSharpTreeInsertCommand(int value, String modelName)
       : super(value, const Uuid().v4(), Logger("extension.bsharptree.insert"),
@@ -60,17 +67,21 @@ class BSharpTreeInsertCommand extends BSharpTreeCommand {
             const Uuid().v4(),
             Logger("extension.bsharptree.insert"),
             ""); //TODO entender para que es necesario el modelName acá
+
   @override
   String toString() {
     return "Inserting value: $value";
   }
+
+  @override
+  Function commandToFunction() {
+    return (BSharpTree tree) => tree.insert(value);
+  }
 }
 
 class BSharpTreeRemoveCommand extends BSharpTreeCommand {
-  static final commandDefinition = CommandDefinition(
-      BSharpTreeExtension.extensionId,
-      "bsharptree-remove",
-      [CommandArgDef("value", ArgType.int)]);
+  static final commandDefinition =
+      BSharpTreeCommand.createBSharpTreeCommandDefinition("bsharptree-remove");
 
   BSharpTreeRemoveCommand(int value, String modelName)
       : super(value, const Uuid().v4(), Logger("extension.bsharptree.insert"),
@@ -85,5 +96,35 @@ class BSharpTreeRemoveCommand extends BSharpTreeCommand {
   @override
   String toString() {
     return "Removing value: $value";
+  }
+
+  @override
+  Function commandToFunction() {
+    return (BSharpTree tree) => tree.remove(value);
+  }
+}
+
+class BSharpTreeFindCommand extends BSharpTreeCommand {
+  static final commandDefinition =
+      BSharpTreeCommand.createBSharpTreeCommandDefinition("bsharptree-find");
+
+  BSharpTreeFindCommand(int value, String modelName)
+      : super(value, const Uuid().v4(), Logger("extension.bsharptree.find"),
+            modelName);
+
+  BSharpTreeFindCommand.build(RawCommand rawCommand)
+      : super(
+            commandDefinition.getArg(name: "value", from: rawCommand),
+            const Uuid().v4(),
+            Logger("extension.bsharptree.find"),
+            ""); //TODO entender para que es necesario el modelName acá
+  @override
+  String toString() {
+    return "Finding value: $value";
+  }
+
+  @override
+  Function commandToFunction() {
+    return (BSharpTree tree) => tree.find(value);
   }
 }

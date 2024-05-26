@@ -23,15 +23,16 @@ void main() {
   var anotherModelMock = AnotherModelMock();
 
   group("Extension tests - ", () {
-    test("command definitions must be 2", () {
+    test("command definitions must be 4", () {
       expect(
           extension.getAllCommandDefinitions(),
           allOf(
-              hasLength(3),
+              hasLength(4),
               containsAll([
                 BSharpTreeInsertCommand.commandDefinition,
                 BSharpTreeBuilderCommand.commandDefinition,
-                BSharpTreeRemoveCommand.commandDefinition
+                BSharpTreeRemoveCommand.commandDefinition,
+                BSharpTreeFindCommand.commandDefinition
               ])));
     });
 
@@ -64,6 +65,24 @@ void main() {
       expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeInsertCommand>()));
       var insertCommand = maybeCommand as BSharpTreeInsertCommand;
       expect(insertCommand.value, 90);
+    });
+
+    test("tree remove value command", () {
+      var rawCommand =
+          RawCommand.withNamedArgs("bsharptree-remove", {"value": "90"});
+      var maybeCommand = extension.buildCommand(rawCommand);
+      expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeRemoveCommand>()));
+      var removeCommand = maybeCommand as BSharpTreeRemoveCommand;
+      expect(removeCommand.value, 90);
+    });
+
+    test("tree find value command", () {
+      var rawCommand =
+          RawCommand.withNamedArgs("bsharptree-find", {"value": "90"});
+      var maybeCommand = extension.buildCommand(rawCommand);
+      expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeFindCommand>()));
+      var findCommand = maybeCommand as BSharpTreeFindCommand;
+      expect(findCommand.value, 90);
     });
 
     test("non existent command", () {

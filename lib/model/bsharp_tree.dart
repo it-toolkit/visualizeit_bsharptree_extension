@@ -27,6 +27,7 @@ class BSharpTree<T extends Comparable<T>> {
   int get depth => _rootNode?.level ?? 0;
 
   bool isRoot(BSharpNode<T> node) => node.id == _rootNode?.id;
+  List<BSharpTreeTransition> getTransitions() => transitions;
 
   /// Inserts a new [value] in the B# tree
   ///
@@ -39,7 +40,6 @@ class BSharpTree<T extends Comparable<T>> {
     transitions = [];
     logger.debug(() => "insertando value: $value");
     if (_rootNode == null) {
-      //_rootNode = BSharpSequentialNode("0-1", 0, _rootMaxCapacity, value);
       _rootNode = _buildRootSequentialNode([value]);
       nodesQuantity = 2;
       lastNodeId = 1;
@@ -58,18 +58,10 @@ class BSharpTree<T extends Comparable<T>> {
           //Si se supera la maxima capacidad de la raiz
           transitions.add(
               NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-          /*var leftNode = BSharpSequentialNode<T>.createNode(getNextNodeId(), 0,
-              maxCapacity, node.values.sublist(0, node.length() ~/ 2));
-          nodesQuantity++;*/
-          /*var rightNode = BSharpSequentialNode<T>.createNode(getNextNodeId(), 0,
-              maxCapacity, node.values.sublist(node.length() ~/ 2));
-          nodesQuantity++;*/
           var leftNode = _buildSequentialNode(node.getFirstHalfOfValues());
           var rightNode = _buildSequentialNode(node.getLastHalfOfValues());
           leftNode.nextNode = rightNode;
           //Crear el nuevo nodo indice raiz que va a reemplazar al nodo secuencia
-          /*var newRoot = BSharpIndexNode<T>("0-1", 1, _rootMaxCapacity,
-              rightNode.values.first, leftNode, rightNode);*/
           var newRoot = _buildRootIndexNode(
               leftNode, [IndexRecord(rightNode.values.first, rightNode)], 1,
               isReplacingRoot: true);
@@ -77,8 +69,6 @@ class BSharpTree<T extends Comparable<T>> {
           newRoot.fixFamilyRelations();
           _rootNode = newRoot;
           transitions.addAll([
-            //NodeCreation(targetId: leftNode.id),
-            //NodeCreation(targetId: rightNode.id),
             NodeWritten(targetId: leftNode.id, transitionTree: this),
             NodeWritten(targetId: rightNode.id),
             NodeWritten(targetId: newRoot.id, transitionTree: this)
@@ -148,7 +138,6 @@ class BSharpTree<T extends Comparable<T>> {
     } else {
       nodesMap.putIfAbsent(current.level, () => [current]);
     }
-    //nodesMap.putIfAbsent(current.level, () => nodesMap[current.level] = );
     if (!current.isLevelZero) {
       var node = current as BSharpIndexNode<T>;
       addNodesByLevelRecursively(nodesMap, node.leftNode);
@@ -287,8 +276,6 @@ class BSharpTree<T extends Comparable<T>> {
             if (node.leftNode.isLevelZero) {
               //Hay que convertir el nodo raiz de un index node a un sequential node
               leftChild = leftChild as BSharpSequentialNode<T>;
-              /*_rootNode = BSharpSequentialNode.createNode(
-                  "0-1", 0, _rootMaxCapacity, leftChild.values);*/
               _rootNode = _buildRootSequentialNode(leftChild.values,
                   isReplacingRoot: true);
             } else {
@@ -311,6 +298,34 @@ class BSharpTree<T extends Comparable<T>> {
     return null;
   }
 
+  String find(T value) {
+    transitions = [];
+    var modifier = NodeSearcher<String, T>(getNodeId);
+    if (_rootNode != null) {
+      _searchTreeAndApplyFunctionToNode(_rootNode!, value, modifier);
+    }
+    return modifier.result!;
+  }
+
+  void _searchTreeAndApplyFunctionToNode(
+      BSharpNode<T> current, T value, NodeModifier modifier) {
+    transitions.add(NodeRead(targetId: current.id));
+    //Base case of the recursion
+    if (current.isLevelZero) {
+      var sequentialNode = current as BSharpSequentialNode<T>;
+      modifier.applyFunctionToNode(sequentialNode);
+    } else {
+      var indexNode = current as BSharpIndexNode<T>;
+      var nextNodeForRecursion = indexNode.findNextNodeForKey(value);
+      _searchTreeAndApplyFunctionToNode(nextNodeForRecursion, value, modifier);
+    }
+  }
+
+  String getNodeId(BSharpNode node) {
+    transitions.add(NodeFound(targetId: node.id));
+    return node.id;
+  }
+
   /// Splits the root [node] (when it's an index node)
   ///
   /// This method is called when the root is over its max capacity
@@ -318,20 +333,7 @@ class BSharpTree<T extends Comparable<T>> {
   /// the new sibling and the former root node.
   void _splitIndexRootNode(BSharpIndexNode<T> node) {
     var recordToPromote = node.rightNodes.elementAt(node.length() ~/ 2);
-    /*var newLeftNode = BSharpIndexNode<T>.createNode(
-        getNextNodeId(),
-        node.level,
-        maxCapacity,
-        node.leftNode,
-        node.rightNodes.sublist(0, node.length() ~/ 2));
-    nodesQuantity++;
-    var newRightNode = BSharpIndexNode<T>.createNode(
-        getNextNodeId(),
-        node.level,
-        maxCapacity,
-        recordToPromote.rightNode,
-        node.rightNodes.sublist((node.length() ~/ 2) + 1));
-    nodesQuantity++;*/
+
     var newLeftNode = _buildIndexNode(node.leftNode,
         node.rightNodes.sublist(0, node.length() ~/ 2), node.level);
     var newRightNode = _buildIndexNode(recordToPromote.rightNode,
@@ -347,8 +349,6 @@ class BSharpTree<T extends Comparable<T>> {
 
     //Seteamos el nuevo nodo como la raiz
     transitions.addAll([
-      //NodeCreation(targetId: newRightNode.id),
-      //NodeCreation(targetId: newLeftNode.id),
       NodeWritten(targetId: newLeftNode.id),
       NodeWritten(targetId: newRightNode.id),
       NodeWritten(
@@ -441,13 +441,6 @@ class BSharpTree<T extends Comparable<T>> {
     var secondPromotedIndexRecord =
         allIndexRecords.elementAt((allIndexRecords.length * 2) ~/ 3);
 
-    /*var newNode = BSharpIndexNode<T>.createNode(
-        getNextNodeId(),
-        node.level,
-        maxCapacity,
-        secondPromotedIndexRecord.rightNode,
-        allIndexRecords.sublist(((allIndexRecords.length * 2) ~/ 3) + 1));
-        nodesQuantity++;*/
     var newNode = _buildIndexNode(
         secondPromotedIndexRecord.rightNode,
         allIndexRecords.sublist(((allIndexRecords.length * 2) ~/ 3) + 1),
@@ -458,7 +451,6 @@ class BSharpTree<T extends Comparable<T>> {
     newNode.fixFamilyRelations();
 
     transitions.addAll([
-      //NodeCreation(targetId: newNode.id),
       NodeWritten(targetId: newNode.id),
       NodeWritten(targetId: node.id),
       NodeWritten(targetId: siblingNode.id, transitionTree: this.clone())
@@ -503,13 +495,6 @@ class BSharpTree<T extends Comparable<T>> {
     allKeys.sort();
     node.values = allKeys.sublist(0, allKeys.length ~/ 3);
 
-    /*var newNode = BSharpSequentialNode<T>.createNode(
-        getNextNodeId(),
-        0,
-        maxCapacity,
-        allKeys.sublist(allKeys.length ~/ 3, (allKeys.length * 2) ~/ 3));
-      nodesQuantity++;
-    */
     var newNode = _buildSequentialNode(
         allKeys.sublist(allKeys.length ~/ 3, (allKeys.length * 2) ~/ 3));
 
@@ -521,7 +506,6 @@ class BSharpTree<T extends Comparable<T>> {
       siblingRecord.key = siblingNode.firstKey();
     }
     transitions.addAll([
-      //NodeCreation(targetId: newNode.id),
       NodeWritten(targetId: newNode.id, transitionTree: this.clone())
     ]); //TODO acá se deberian escribir tambien los otros nodos
     return IndexRecord(newNode.firstKey(), newNode);
@@ -616,7 +600,6 @@ class BSharpTree<T extends Comparable<T>> {
     for (var value in listOfValues) {
       insert(value);
     }
-    //logger.debug(() => printTree());
   }
 
   /// Fuse a sequential [node] with its adjacent siblings, splitting the values between the two of them and freeing the node.
@@ -931,10 +914,6 @@ class BSharpTree<T extends Comparable<T>> {
     return false;
   }
 
-  List<BSharpTreeTransition> getTransitions() {
-    return transitions;
-  }
-
   BSharpTree<T> clone() {
     BSharpNode<T>? rootNode;
     if (_rootNode != null) {
@@ -1049,5 +1028,28 @@ class BSharpTree<T extends Comparable<T>> {
   void _release(BSharpNode<T> node) {
     freeNodesIds.add(node.id);
     nodesQuantity--;
+  }
+}
+
+abstract class NodeModifier<S, T extends Comparable<T>> {
+  bool changedStructure = false;
+  S? result;
+  Function functionToApply;
+
+  NodeModifier(this.functionToApply);
+
+  void applyFunctionToNode(BSharpNode<T> node);
+
+  S? getResult() {
+    return result;
+  }
+}
+
+class NodeSearcher<S, T extends Comparable<T>> extends NodeModifier<S, T> {
+  NodeSearcher(super.functionToApply);
+
+  @override
+  void applyFunctionToNode(BSharpNode<T> node) {
+    result = functionToApply(node);
   }
 }

@@ -35,7 +35,6 @@ class BSharpTreeModel extends Model {
   int get _pendingFrames => _transitions.length - _currentFrame - 1;
 
   (int, Model) executeCommand(BSharpTreeCommand command) {
-    var functionToExecute = getFunctionFromCommand(command);
     if (_canExecuteCommand(command)) {
       if (isInTransition()) {
         //El arbol está en transicion
@@ -48,7 +47,8 @@ class BSharpTreeModel extends Model {
         _lastTransitionTree = _baseTree.clone();
         commandInExecution = command;
         _currentFrame = 0;
-        functionToExecute.call(_baseTree);
+        var functionToExecute = command.commandToFunction();
+        functionToExecute(_baseTree);
         _transitions = _baseTree.getTransitions();
         if (_transitions.firstOrNull?.transitionTree != null) {
           _lastTransitionTree = _transitions.first.transitionTree;
@@ -80,14 +80,5 @@ class BSharpTreeModel extends Model {
         List.of(_transitions),
         extensionId,
         name);
-  }
-
-  void Function(BSharpTree<Comparable> tree) getFunctionFromCommand(
-      BSharpTreeCommand command) {
-    if (command is BSharpTreeInsertCommand) {
-      return (BSharpTree tree) => tree.insert(command.value);
-    } else {
-      return (BSharpTree tree) => tree.remove(command.value);
-    }
   }
 }
