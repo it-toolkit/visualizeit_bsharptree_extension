@@ -98,31 +98,14 @@ class TreeNodeWidget extends StatelessWidget {
     ];
   }
 
-  Color getBoxBorderColorByTransition() {
-    if (transition != null) {
-      if (transition is NodeRead ||
-          transition is NodeWritten ||
-          transition is NodeBalancing ||
-          transition is NodeSplit ||
-          transition is NodeFusion) {
-        return Colors.blue;
-      } else if (transition is NodeOverflow ||
-          transition is NodeUnderflow ||
-          transition is NodeRelease) {
-        return Colors.red;
-      } else if (transition is NodeFound) {
-        return Colors.green;
-      }
-    }
-    return Colors.black;
-  }
-
   @override
   Widget build(BuildContext context) {
     final List<Component> components = buildComponents();
 
     var boxBorderWidth = transition != null ? 2.0 : 1.0;
-    var boxBorderColor = getBoxBorderColorByTransition();
+    var boxBorderColor = transition != null
+        ? transition!.getBoxBorderColorForWidget()
+        : Colors.black;
 
     return ArrowElement(
         id: node.id,
@@ -147,8 +130,8 @@ class TreeNodeWidget extends StatelessWidget {
   List<Widget> buildComponentsContainers(List<Component> components) {
     var widgets = <Widget>[];
     if (transition != null) {
-      String text = transition!.textForNodeWidget;
-      Color textColor = getTextColorForTransition();
+      String text = transition!.getTextForWidget();
+      Color textColor = transition!.getTextColorForWidget();
       widgets.add(Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -183,52 +166,6 @@ class TreeNodeWidget extends StatelessWidget {
     widgets.add(Container(child: components[1].widget));
     return widgets;
   }
-
-  Color getTextColorForTransition() {
-    if (transition is NodeRead) {
-      return Colors.brown;
-    } else if (transition is NodeOverflow ||
-        transition is NodeUnderflow ||
-        transition is NodeRelease) {
-      return Colors.red;
-    } else if (transition is NodeBalancing ||
-        transition is NodeSplit ||
-        transition is NodeFusion) {
-      return Colors.blue;
-    } else if (transition is NodeWritten ||
-        transition is NodeCreation ||
-        transition is NodeReuse ||
-        transition is NodeFound) {
-      return Colors.green;
-    }
-    return Colors.black;
-  }
-
-  /*String getNodeTextForTransition() {
-    var text = "";
-    if (transition is NodeRead) {
-      text = "Read";
-    } else if (transition is NodeWritten) {
-      text = "Written";
-    } else if (transition is NodeBalancing) {
-      text = "Balancing";
-    } else if (transition is NodeOverflow) {
-      text = "Overflow";
-    } else if (transition is NodeUnderflow) {
-      text = "Underflow";
-    } else if (transition is NodeSplit) {
-      text = "Splitting";
-    } else if (transition is NodeFusion) {
-      text = "Fusing";
-    } else if (transition is NodeRelease) {
-      text = "Releasing";
-    } else if (transition is NodeReuse) {
-      text = "Reused";
-    } else if (transition is NodeCreation) {
-      text = "Created";
-    }
-    return text;
-  }*/
 
   static Widget _boxContainer(String text, Color color,
       {double margin = 0.0,
