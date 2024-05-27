@@ -4,15 +4,14 @@ import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dar
 import 'package:visualizeit_bsharptree_extension/model/bsharp_index_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_node.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_sequential_node.dart';
+import 'package:visualizeit_bsharptree_extension/model/observable.dart';
 import 'package:visualizeit_extensions/logging.dart';
 
-class BSharpTree<T extends Comparable<T>> {
+class BSharpTree<T extends Comparable<T>> extends Observable {
   BSharpNode<T>? _rootNode;
   final int maxCapacity;
   int nodesQuantity = 0;
   int lastNodeId = 0;
-
-  List<BSharpTreeTransition> transitions = [];
 
   final logger = Logger("extension.bsharptree.model");
 
@@ -27,7 +26,7 @@ class BSharpTree<T extends Comparable<T>> {
   int get depth => _rootNode?.level ?? 0;
 
   bool isRoot(BSharpNode<T> node) => node.id == _rootNode?.id;
-  List<BSharpTreeTransition> getTransitions() => transitions;
+  //List<BSharpTreeTransition> getTransitions() => transitions;
 
   /// Inserts a new [value] in the B# tree
   ///
@@ -37,26 +36,23 @@ class BSharpTree<T extends Comparable<T>> {
   ///
   /// May cause the B# tree to split nodes or grow on height or width
   void insert(T value) {
-    transitions = [];
     logger.debug(() => "insertando value: $value");
     if (_rootNode == null) {
       _rootNode = _buildRootSequentialNode([value]);
       nodesQuantity = 2;
       lastNodeId = 1;
-      transitions
-          .add(NodeWritten(targetId: _rootNode!.id, transitionTree: this));
+      notifyObservers(
+          NodeWritten(targetId: _rootNode!.id, transitionTree: this));
     } else {
       if (_rootNode!.isLevelZero) {
         //el unico nodo del arbol es la raiz
         var node = _rootNode as BSharpSequentialNode<T>;
+        notifyObservers(NodeRead(targetId: node.id));
         node.addToNode(value);
-        transitions.addAll([
-          NodeRead(targetId: node.id),
-          NodeWritten(targetId: _rootNode!.id, transitionTree: this.clone())
-        ]);
+        notifyObservers(
+            NodeWritten(targetId: _rootNode!.id, transitionTree: this.clone()));
         if (node.isOverflowed()) {
-          //Si se supera la maxima capacidad de la raiz
-          transitions.add(
+          notifyObservers(
               NodeOverflow(targetId: node.id, transitionTree: this.clone()));
           var leftNode = _buildSequentialNode(node.getFirstHalfOfValues());
           var rightNode = _buildSequentialNode(node.getLastHalfOfValues());
@@ -68,14 +64,16 @@ class BSharpTree<T extends Comparable<T>> {
 
           newRoot.fixFamilyRelations();
           _rootNode = newRoot;
-          transitions.addAll([
-            NodeWritten(targetId: leftNode.id, transitionTree: this),
+          notifyObservers(
+              NodeWritten(targetId: leftNode.id, transitionTree: this));
+          notifyObservers(
             NodeWritten(targetId: rightNode.id),
-            NodeWritten(targetId: newRoot.id, transitionTree: this)
-          ]);
+          );
+          notifyObservers(
+              NodeWritten(targetId: newRoot.id, transitionTree: this));
         }
       } else {
-        _insertRecursively(_rootNode, null, value);
+        _insertRecursively(_rootNode!, null, value);
       }
     }
 
@@ -89,7 +87,7 @@ class BSharpTree<T extends Comparable<T>> {
   ///
   /// May cause the tree to fuse nodes and shrink in height or width
   void remove(T value) {
-    transitions = [];
+    //transitions = [];
     logger.debug(() => "eliminando value: $value");
     if (_rootNode != null) {
       _removeRecursively(_rootNode!, value);
@@ -153,11 +151,12 @@ class BSharpTree<T extends Comparable<T>> {
   /// then goes back to update every node necesary in the recursion
   /// If the value is already on the sequential node, it throws a [ElementInsertionException]
   IndexRecord<T>? _insertRecursively(
-      BSharpNode<T>? current, BSharpIndexNode<T>? parent, T value) {
-    if (current != null && current.isLevelZero) {
+      BSharpNode<T> current, BSharpIndexNode<T>? parent, T value) {
+    notifyObservers(NodeRead(targetId: current.id));
+    if (current.isLevelZero) {
       // Encontré el nodo secuencial donde deberia insertar
       var node = current as BSharpSequentialNode<T>;
-      transitions.add(NodeRead(targetId: node.id));
+
       logger.debug(() => "nodo ${node.id} es donde se va a insertar el valor");
       if (node.isValueOnNode(value)) {
         logger.error(
@@ -166,13 +165,11 @@ class BSharpTree<T extends Comparable<T>> {
             "cant insert the value $value, it's already on the tree");
       }
       node.addToNode(value);
-      transitions
-          .add(NodeWritten(targetId: node.id, transitionTree: this.clone()));
+      notifyObservers(
+          NodeWritten(targetId: node.id, transitionTree: this.clone()));
       if (node.isOverflowed()) {
-        //Si se supera la maxima capacidad del nodo
-        transitions
-            .add(NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-
+        notifyObservers(
+            NodeOverflow(targetId: node.id, transitionTree: this.clone()));
         var hasBalancedWithSibling =
             _tryToBalanceSequentialNodesWithSibling(node);
 
@@ -184,7 +181,6 @@ class BSharpTree<T extends Comparable<T>> {
       }
     } else {
       var node = current as BSharpIndexNode<T>;
-      transitions.add(NodeRead(targetId: node.id));
       var nextNode = node.findNextNodeForKey(value);
       IndexRecord<T>? promotedKey =
           _insertRecursively(nextNode, current, value);
@@ -194,12 +190,12 @@ class BSharpTree<T extends Comparable<T>> {
             "insertando key promocionada: ${promotedKey.key} en nodo ${node.id}");
         node.addIndexRecordToNode(promotedKey);
         node.fixFamilyRelations();
-        transitions
-            .add(NodeWritten(targetId: node.id, transitionTree: this.clone()));
+        notifyObservers(
+            NodeWritten(targetId: node.id, transitionTree: this.clone()));
         if (node.isOverflowed()) {
+          notifyObservers(
+              NodeOverflow(targetId: node.id, transitionTree: this.clone()));
           if (!isRoot(node)) {
-            transitions.add(
-                NodeOverflow(targetId: node.id, transitionTree: this.clone()));
             var hasBalancedWithSibling =
                 _tryToBalanceOverflowedIndexNodeWithSiblings(node);
             if (!hasBalancedWithSibling) {
@@ -208,9 +204,6 @@ class BSharpTree<T extends Comparable<T>> {
             }
           } else {
             //current es la raiz y tengo que dividirla en dos
-            transitions.add(
-                NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-            //Si se supera la maxima capacidad de la raiz
             _splitIndexRootNode(node);
           }
         }
@@ -225,17 +218,17 @@ class BSharpTree<T extends Comparable<T>> {
   /// then goes back to update every node necesary in the recursion
   /// If the value is not on the sequential node, it throws a [ElementNotFoundException]
   IndexRecord<T>? _removeRecursively(BSharpNode<T> current, T value) {
+    notifyObservers(NodeRead(targetId: current.id));
     if (current.isLevelZero) {
       var node = current as BSharpSequentialNode<T>;
-      transitions.add(NodeRead(targetId: node.id));
       if (node.values.contains(value)) {
         logger.debug(() =>
             "el valor a remover '$value' se encontró en el nodo con id: ${node.id}");
         node.removeValue(value);
-        transitions
-            .add(NodeWritten(targetId: node.id, transitionTree: this.clone()));
+        notifyObservers(
+            NodeWritten(targetId: node.id, transitionTree: this.clone()));
         if (!isRoot(node) && node.isUnderflowed()) {
-          transitions.add(
+          notifyObservers(
               NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
           var hasBalancedWithSibling =
               _tryToBalanceUnderflowedSequentialNodeWithSiblings(node);
@@ -251,7 +244,6 @@ class BSharpTree<T extends Comparable<T>> {
       }
     } else {
       var node = current as BSharpIndexNode<T>;
-      transitions.add(NodeRead(targetId: node.id));
       BSharpNode<T> nextNode = node.findNextNodeForKey(value);
       IndexRecord<T>? indexRecordToUpdate = _removeRecursively(nextNode, value);
 
@@ -261,9 +253,9 @@ class BSharpTree<T extends Comparable<T>> {
         node.rightNodes.removeWhere((indexRecord) =>
             indexRecord.rightNode.id == indexRecordToUpdate.rightNode.id);
         if (node.parent != null && node.isUnderflowed()) {
-          transitions.add(
+          notifyObservers(
               NodeWritten(targetId: node.id, transitionTree: this.clone()));
-          transitions.add(
+          notifyObservers(
               NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
           var hasBalancedWithSibling =
               _tryToBalanceUnderflowedIndexNodeWithSiblings(node);
@@ -286,12 +278,12 @@ class BSharpTree<T extends Comparable<T>> {
               node.fixFamilyRelations();
             }
             _release(leftChild);
-            transitions.add(NodeRelease(targetId: leftChild.id));
+            notifyObservers(NodeRelease(targetId: leftChild.id));
           } else {
             node.fixFamilyRelations();
           }
 
-          transitions.add(NodeWritten(targetId: node.id, transitionTree: this));
+          notifyObservers(NodeWritten(targetId: node.id, transitionTree: this));
         }
       }
     }
@@ -299,7 +291,6 @@ class BSharpTree<T extends Comparable<T>> {
   }
 
   String find(T value) {
-    transitions = [];
     var modifier = NodeSearcher<String, T>(getNodeId);
     if (_rootNode != null) {
       _searchTreeAndApplyFunctionToNode(_rootNode!, value, modifier);
@@ -309,7 +300,7 @@ class BSharpTree<T extends Comparable<T>> {
 
   void _searchTreeAndApplyFunctionToNode(
       BSharpNode<T> current, T value, NodeModifier modifier) {
-    transitions.add(NodeRead(targetId: current.id));
+    notifyObservers(NodeRead(targetId: current.id));
     //Base case of the recursion
     if (current.isLevelZero) {
       var sequentialNode = current as BSharpSequentialNode<T>;
@@ -322,7 +313,7 @@ class BSharpTree<T extends Comparable<T>> {
   }
 
   String getNodeId(BSharpNode node) {
-    transitions.add(NodeFound(targetId: node.id));
+    notifyObservers(NodeFound(targetId: node.id));
     return node.id;
   }
 
@@ -347,14 +338,10 @@ class BSharpTree<T extends Comparable<T>> {
     newRightNode.fixFamilyRelations();
     node.fixFamilyRelations();
 
-    //Seteamos el nuevo nodo como la raiz
-    transitions.addAll([
-      NodeWritten(targetId: newLeftNode.id),
-      NodeWritten(targetId: newRightNode.id),
-      NodeWritten(
-          targetId: node.id,
-          transitionTree: this.clone()) //TODO ver si va esto aca
-    ]);
+    notifyObservers(NodeWritten(targetId: newLeftNode.id));
+    notifyObservers(NodeWritten(targetId: newRightNode.id));
+    notifyObservers(
+        NodeWritten(targetId: node.id, transitionTree: this.clone()));
   }
 
   /// Balances index nodes, taking a node (and its children) from the right sibling and adding a node on the left sibling
@@ -375,14 +362,14 @@ class BSharpTree<T extends Comparable<T>> {
 
     leftSiblingNode.fixFamilyRelations();
     rightSiblingNode.fixFamilyRelations();
-    transitions.addAll([
-      NodeBalancing(
-          targetId: leftSiblingNode.id,
-          firstOptionalTargetId: rightSiblingNode.id,
-          transitionTree: this.clone()),
-      NodeWritten(targetId: leftSiblingNode.id),
-      NodeWritten(targetId: rightSiblingNode.id, transitionTree: this.clone())
-    ]);
+
+    notifyObservers(NodeBalancing(
+        targetId: leftSiblingNode.id,
+        firstOptionalTargetId: rightSiblingNode.id,
+        transitionTree: this.clone()));
+    notifyObservers(NodeWritten(targetId: leftSiblingNode.id));
+    notifyObservers(NodeWritten(
+        targetId: rightSiblingNode.id, transitionTree: this.clone()));
   }
 
   /// Balances index nodes, taking a node (and its children) from the left sibling and adding a node on the right sibling
@@ -404,14 +391,13 @@ class BSharpTree<T extends Comparable<T>> {
     leftSiblingNode.fixFamilyRelations();
     rightSiblingNode.fixFamilyRelations();
 
-    transitions.addAll([
-      NodeBalancing(
-          targetId: leftSiblingNode.id,
-          firstOptionalTargetId: rightSiblingNode.id,
-          transitionTree: this.clone()),
-      NodeWritten(targetId: leftSiblingNode.id),
-      NodeWritten(targetId: rightSiblingNode.id, transitionTree: this.clone())
-    ]);
+    notifyObservers(NodeBalancing(
+        targetId: leftSiblingNode.id,
+        firstOptionalTargetId: rightSiblingNode.id,
+        transitionTree: this.clone()));
+    notifyObservers(NodeWritten(targetId: leftSiblingNode.id));
+    notifyObservers(NodeWritten(
+        targetId: rightSiblingNode.id, transitionTree: this.clone()));
   }
 
   /// Taking all the index records of an index [node] and its [siblingNode], and adding the [IndexRecord] of the siblingNode,
@@ -419,7 +405,7 @@ class BSharpTree<T extends Comparable<T>> {
   /// a new [IndexRecord] to be added to the parent node
   IndexRecord<T> _splitSiblingIndexNodes(BSharpIndexNode<T> node,
       BSharpIndexNode<T> siblingNode, BSharpIndexNode<T> parent) {
-    transitions.add(
+    notifyObservers(
         NodeSplit(targetId: node.id, firstOptionalTargetId: siblingNode.id));
 
     var siblingRecord = parent.findIndexRecordById(siblingNode.id);
@@ -450,11 +436,10 @@ class BSharpTree<T extends Comparable<T>> {
     siblingNode.fixFamilyRelations();
     newNode.fixFamilyRelations();
 
-    transitions.addAll([
-      NodeWritten(targetId: newNode.id),
-      NodeWritten(targetId: node.id),
-      NodeWritten(targetId: siblingNode.id, transitionTree: this.clone())
-    ]);
+    notifyObservers(NodeWritten(targetId: newNode.id));
+    notifyObservers(NodeWritten(targetId: node.id));
+    notifyObservers(
+        NodeWritten(targetId: siblingNode.id, transitionTree: this.clone()));
 
     return IndexRecord(secondPromotedIndexRecord.key, newNode);
   }
@@ -473,14 +458,14 @@ class BSharpTree<T extends Comparable<T>> {
     if (siblingRecord != null) {
       siblingRecord.key = siblingNode.firstKey();
     }
-    transitions.addAll([
-      NodeBalancing(
-          targetId: node.id,
-          firstOptionalTargetId: siblingNode.id,
-          transitionTree: this),
-      NodeWritten(targetId: node.id),
-      NodeWritten(targetId: siblingNode.id, transitionTree: this.clone())
-    ]);
+
+    notifyObservers(NodeBalancing(
+        targetId: node.id,
+        firstOptionalTargetId: siblingNode.id,
+        transitionTree: this));
+    notifyObservers(NodeWritten(targetId: node.id));
+    notifyObservers(
+        NodeWritten(targetId: siblingNode.id, transitionTree: this.clone()));
   }
 
   /// Taking all the keys records of a sequential [node] and its [siblingNode], splits the keys in 3 nodes,
@@ -488,8 +473,9 @@ class BSharpTree<T extends Comparable<T>> {
   /// to the parent node
   IndexRecord<T> _splitSiblingSequentialNodes(BSharpSequentialNode<T> node,
       BSharpSequentialNode<T> siblingNode, BSharpIndexNode<T> parentNode) {
-    transitions.add(
+    notifyObservers(
         NodeSplit(targetId: node.id, firstOptionalTargetId: siblingNode.id));
+
     var siblingRecord = parentNode.findIndexRecordById(siblingNode.id);
     var allKeys = node.values + siblingNode.values;
     allKeys.sort();
@@ -505,9 +491,11 @@ class BSharpTree<T extends Comparable<T>> {
     if (siblingRecord != null) {
       siblingRecord.key = siblingNode.firstKey();
     }
-    transitions.addAll([
-      NodeWritten(targetId: newNode.id, transitionTree: this.clone())
-    ]); //TODO acá se deberian escribir tambien los otros nodos
+
+    notifyObservers(NodeWritten(
+        targetId: newNode.id,
+        transitionTree: this
+            .clone())); //TODO acá se deberian escribir tambien los otros nodos
     return IndexRecord(newNode.firstKey(), newNode);
   }
 
@@ -559,11 +547,11 @@ class BSharpTree<T extends Comparable<T>> {
 
     _release(siblingNode);
 
-    transitions.addAll([
-      NodeFusion(targetId: node.id, firstOptionalTargetId: siblingNode.id),
-      NodeWritten(targetId: node.id),
-      NodeRelease(targetId: siblingNode.id, transitionTree: this.clone())
-    ]);
+    notifyObservers(
+        NodeFusion(targetId: node.id, firstOptionalTargetId: siblingNode.id));
+    notifyObservers(NodeWritten(targetId: node.id));
+    notifyObservers(
+        NodeRelease(targetId: siblingNode.id, transitionTree: this.clone()));
 
     return siblingRecord;
   }
@@ -585,11 +573,10 @@ class BSharpTree<T extends Comparable<T>> {
 
     _release(siblingNode);
 
-    transitions.addAll([
-      NodeFusion(targetId: node.id, firstOptionalTargetId: siblingNode.id),
-      NodeWritten(targetId: node.id),
-      NodeRelease(targetId: siblingNode.id)
-    ]);
+    notifyObservers(
+        NodeFusion(targetId: node.id, firstOptionalTargetId: siblingNode.id));
+    notifyObservers(NodeWritten(targetId: node.id));
+    notifyObservers(NodeRelease(targetId: siblingNode.id));
 
     return siblingRecord;
   }
@@ -672,19 +659,17 @@ class BSharpTree<T extends Comparable<T>> {
       rightSiblingRecord.key = rightSiblingNode.firstKey();
     }
 
+    notifyObservers(NodeFusion(
+        targetId: node.id,
+        firstOptionalTargetId: leftSiblingNode.id,
+        secondOptionalTargetId: rightSiblingNode.id));
+    notifyObservers(NodeWritten(targetId: leftSiblingNode.id));
+    notifyObservers(NodeWritten(targetId: rightSiblingNode.id));
+
     _release(node);
 
-    transitions.addAll([
-      NodeFusion(
-          targetId: node.id,
-          firstOptionalTargetId: leftSiblingNode.id,
-          secondOptionalTargetId: rightSiblingNode.id),
-      NodeWritten(targetId: leftSiblingNode.id),
-      NodeWritten(targetId: rightSiblingNode.id),
-      NodeRelease(
-          targetId: node.id,
-          transitionTree: this.clone()) //TODO CHEQUEAR SI VA ACA
-    ]);
+    notifyObservers(
+        NodeRelease(targetId: node.id, transitionTree: this.clone()));
 
     return nodeRecord;
   }
@@ -696,7 +681,7 @@ class BSharpTree<T extends Comparable<T>> {
     var rightSiblingNode = node.getRightSibling();
 
     if (rightSiblingNode != null) {
-      transitions.add(NodeRead(targetId: rightSiblingNode.id));
+      notifyObservers(NodeRead(targetId: rightSiblingNode.id));
       //Se intenta balancear con el hermano derecho
       if (rightSiblingNode.hasCapacityLeft()) {
         _balanceSequentialNodeWithSibling(node, rightSiblingNode);
@@ -708,7 +693,7 @@ class BSharpTree<T extends Comparable<T>> {
     var leftSiblingNode =
         node.getLeftSibling(); //Se intenta balancear con el hermano izquierdo
     if (leftSiblingNode != null) {
-      transitions.add(NodeRead(targetId: leftSiblingNode.id));
+      notifyObservers(NodeRead(targetId: leftSiblingNode.id));
       if (leftSiblingNode.hasCapacityLeft()) {
         _balanceSequentialNodeWithSibling(leftSiblingNode, node);
         return true;
@@ -724,7 +709,7 @@ class BSharpTree<T extends Comparable<T>> {
   bool _tryToBalanceUnderflowedIndexNodeWithSiblings(BSharpIndexNode<T> node) {
     var rightSiblingNode = node.getRightSibling();
     if (rightSiblingNode != null) {
-      transitions.add(NodeRead(targetId: rightSiblingNode.id));
+      notifyObservers(NodeRead(targetId: rightSiblingNode.id));
       if (rightSiblingNode.isOverMinCapacity()) {
         _balanceIndexNodesRightToLeft(
             node, rightSiblingNode, node.getParent()!);
@@ -736,7 +721,7 @@ class BSharpTree<T extends Comparable<T>> {
     var leftSiblingNode = node.getLeftSibling();
 
     if (leftSiblingNode != null) {
-      transitions.add(NodeRead(targetId: leftSiblingNode.id));
+      notifyObservers(NodeRead(targetId: leftSiblingNode.id));
       if (leftSiblingNode.isOverMinCapacity()) {
         _balanceIndexNodesLeftToRight(leftSiblingNode, node, node.getParent()!);
         return true;
@@ -752,7 +737,7 @@ class BSharpTree<T extends Comparable<T>> {
   bool _tryToBalanceOverflowedIndexNodeWithSiblings(BSharpIndexNode<T> node) {
     var rightSiblingNode = node.getRightSibling();
     if (rightSiblingNode != null) {
-      transitions.add(NodeRead(targetId: rightSiblingNode.id));
+      notifyObservers(NodeRead(targetId: rightSiblingNode.id));
       if (rightSiblingNode.hasCapacityLeft()) {
         _balanceIndexNodesLeftToRight(
             node, rightSiblingNode, node.getParent()!);
@@ -763,7 +748,7 @@ class BSharpTree<T extends Comparable<T>> {
 
     var leftSiblingNode = node.getLeftSibling();
     if (leftSiblingNode != null) {
-      transitions.add(NodeRead(targetId: leftSiblingNode.id));
+      notifyObservers(NodeRead(targetId: leftSiblingNode.id));
       if (leftSiblingNode.hasCapacityLeft()) {
         _balanceIndexNodesRightToLeft(leftSiblingNode, node, node.getParent()!);
         return true;
@@ -841,16 +826,15 @@ class BSharpTree<T extends Comparable<T>> {
       rightSiblingRecord.key = rightSiblingNode.firstKey();
     }
 
-    transitions.addAll([
-      NodeBalancing(
-          targetId: leftSiblingNode.id,
-          firstOptionalTargetId: centerSiblingNode.id,
-          secondOptionalTargetId: rightSiblingNode.id,
-          transitionTree: this.clone()),
-      NodeWritten(targetId: leftSiblingNode.id),
-      NodeWritten(targetId: centerSiblingNode.id),
-      NodeWritten(targetId: rightSiblingNode.id, transitionTree: this.clone())
-    ]);
+    notifyObservers(NodeBalancing(
+        targetId: leftSiblingNode.id,
+        firstOptionalTargetId: centerSiblingNode.id,
+        secondOptionalTargetId: rightSiblingNode.id,
+        transitionTree: this.clone()));
+    notifyObservers(NodeWritten(targetId: leftSiblingNode.id));
+    notifyObservers(NodeWritten(targetId: centerSiblingNode.id));
+    notifyObservers(NodeWritten(
+        targetId: rightSiblingNode.id, transitionTree: this.clone()));
   }
 
   bool _tryToBalanceUnderflowedSequentialNodeWithSiblings(
@@ -860,7 +844,7 @@ class BSharpTree<T extends Comparable<T>> {
 
     var rightSiblingNode = node.getRightSibling();
     if (rightSiblingNode != null) {
-      transitions.add(NodeRead(targetId: rightSiblingNode.id));
+      notifyObservers(NodeRead(targetId: rightSiblingNode.id));
       if (rightSiblingNode.isOverMinCapacity()) {
         //Se intenta balancear con el hermano derecho
         _balanceSequentialNodeWithSibling(node, rightSiblingNode);
@@ -872,7 +856,7 @@ class BSharpTree<T extends Comparable<T>> {
     var leftSiblingNode =
         node.getLeftSibling(); //Se intenta balancear con el hermano izquierdo
     if (leftSiblingNode != null) {
-      transitions.add(NodeRead(targetId: leftSiblingNode.id));
+      notifyObservers(NodeRead(targetId: leftSiblingNode.id));
       if (leftSiblingNode.isOverMinCapacity()) {
         _balanceSequentialNodeWithSibling(leftSiblingNode, node);
         return true;
@@ -886,7 +870,8 @@ class BSharpTree<T extends Comparable<T>> {
         leftSiblingNode != null &&
         leftSiblingNode.getLeftSibling() != null) {
       var leftLeftSibling = leftSiblingNode.getLeftSibling()!;
-      transitions.add(NodeRead(targetId: leftLeftSibling.id));
+
+      notifyObservers(NodeRead(targetId: leftLeftSibling.id));
       if (leftLeftSibling.isOverMinCapacity()) {
         _balanceSequentialNodeWithTwoSiblings(
             leftLeftSibling, leftSiblingNode, node);
@@ -901,7 +886,8 @@ class BSharpTree<T extends Comparable<T>> {
         rightSiblingNode != null &&
         rightSiblingNode.getRightSibling() != null) {
       var rightRightSibling = rightSiblingNode.getRightSibling()!;
-      transitions.add(NodeRead(targetId: rightRightSibling.id));
+
+      notifyObservers(NodeRead(targetId: rightRightSibling.id));
       if (rightRightSibling.isOverMinCapacity()) {
         _balanceSequentialNodeWithTwoSiblings(
             node, rightSiblingNode, rightRightSibling);
@@ -940,15 +926,6 @@ class BSharpTree<T extends Comparable<T>> {
     }
   }
 
-  /*Map toJson() {
-    Map rootNodeMap = _rootNode != null ? _rootNode!.toJson() : null;
-    return {
-      'maxCapacity': maxCapacity,
-      'nodesQuantity': nodesQuantity,
-      'rootNode': rootNodeMap
-    };
-  }*/
-
   BSharpSequentialNode<T> _buildSequentialNode(List<T> values,
       {String? givenNodeId, int? givenCapacity, bool isReplacingRoot = false}) {
     var nodeId = "";
@@ -967,7 +944,7 @@ class BSharpTree<T extends Comparable<T>> {
     // Si no se está reemplazando la raiz, es un nuevo nodo hoja que hay que agregar al arbol
     if (!isReplacingRoot) {
       nodesQuantity++;
-      transitions.add(hasReused
+      notifyObservers(hasReused
           ? NodeReuse(targetId: nodeId)
           : NodeCreation(targetId: nodeId));
     }
@@ -1001,7 +978,7 @@ class BSharpTree<T extends Comparable<T>> {
 
     if (!isReplacingRoot) {
       nodesQuantity++;
-      transitions.add(hasReused
+      notifyObservers(hasReused
           ? NodeReuse(targetId: nodeId)
           : NodeCreation(targetId: nodeId));
     }

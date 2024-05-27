@@ -2,18 +2,23 @@ import 'package:visualizeit_bsharptree_extension/extension/bsharp_transition.dar
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_command.dart';
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_extension.dart';
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
+import 'package:visualizeit_bsharptree_extension/model/tree_logger_observer.dart';
+import 'package:visualizeit_bsharptree_extension/model/tree_transition_observer.dart';
 import 'package:visualizeit_extensions/common.dart';
 
 class BSharpTreeModel extends Model {
   final BSharpTree _baseTree;
   BSharpTree? _lastTransitionTree;
   List<BSharpTreeTransition> _transitions = [];
+  late TreeLoggerObserver loggerObserver;
+
   int _currentFrame = 0;
   BSharpTreeCommand? commandInExecution;
 
   BSharpTreeModel(String name, int treeCapacity, List<int> initialValues)
       : _baseTree = BSharpTree<num>(treeCapacity),
         super(BSharpTreeExtension.extensionId, name) {
+    loggerObserver = TreeLoggerObserver(_baseTree);
     _baseTree.insertAll(initialValues);
     _lastTransitionTree = _baseTree;
   }
@@ -47,9 +52,11 @@ class BSharpTreeModel extends Model {
         _lastTransitionTree = _baseTree.clone();
         commandInExecution = command;
         _currentFrame = 0;
+        var transitionObserver = TreeTransitionObserver(_baseTree);
         var functionToExecute = command.commandToFunction();
         functionToExecute(_baseTree);
-        _transitions = _baseTree.getTransitions();
+        _transitions = transitionObserver.transitions;
+        transitionObserver.removeObserver();
         if (_transitions.firstOrNull?.transitionTree != null) {
           _lastTransitionTree = _transitions.first.transitionTree;
         }

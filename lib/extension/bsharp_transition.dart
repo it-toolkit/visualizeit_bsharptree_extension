@@ -46,9 +46,7 @@ abstract class BSharpTreeTransition implements TransitionView {
 }
 
 class NodeCreation extends BSharpTreeTransition with NodeCreationView {
-  NodeCreation({required super.targetId, super.transitionTree}) {
-    logger.debug(() => "Creando nodo con id: $_targetId");
-  }
+  NodeCreation({required super.targetId, super.transitionTree});
 
   @override
   String toString() {
@@ -57,9 +55,7 @@ class NodeCreation extends BSharpTreeTransition with NodeCreationView {
 }
 
 class NodeReuse extends BSharpTreeTransition with NodeReuseView {
-  NodeReuse({required super.targetId, super.transitionTree}) {
-    logger.debug(() => "Reutilizando nodo con id: $_targetId");
-  }
+  NodeReuse({required super.targetId, super.transitionTree});
 
   @override
   String toString() {
@@ -68,9 +64,7 @@ class NodeReuse extends BSharpTreeTransition with NodeReuseView {
 }
 
 class NodeRead extends BSharpTreeTransition with NodeReadView {
-  NodeRead({required super.targetId}) {
-    logger.debug(() => "nodo $_targetId leido");
-  }
+  NodeRead({required super.targetId});
   @override
   String toString() {
     return "Node read: ${super.toString()}";
@@ -78,9 +72,7 @@ class NodeRead extends BSharpTreeTransition with NodeReadView {
 }
 
 class NodeWritten extends BSharpTreeTransition with NodeWrittenView {
-  NodeWritten({required super.targetId, super.transitionTree}) {
-    logger.debug(() => "nodo $_targetId escrito");
-  }
+  NodeWritten({required super.targetId, super.transitionTree});
   @override
   String toString() {
     return "Node Written: ${super.toString()}";
@@ -88,9 +80,7 @@ class NodeWritten extends BSharpTreeTransition with NodeWrittenView {
 }
 
 class NodeOverflow extends BSharpTreeTransition with NodeOverflowView {
-  NodeOverflow({required super.targetId, super.transitionTree}) {
-    logger.debug(() => "nodo $_targetId supera la capacidad maxima");
-  }
+  NodeOverflow({required super.targetId, super.transitionTree});
   @override
   String toString() {
     return "Overflowed node: ${super.toString()}";
@@ -98,9 +88,7 @@ class NodeOverflow extends BSharpTreeTransition with NodeOverflowView {
 }
 
 class NodeUnderflow extends BSharpTreeTransition with NodeUnderflowView {
-  NodeUnderflow({required super.targetId, super.transitionTree}) {
-    logger.debug(() => "nodo $_targetId por debajo de la capacidad minima");
-  }
+  NodeUnderflow({required super.targetId, super.transitionTree});
   @override
   String toString() {
     return "Underflowed Node: ${super.toString()}";
@@ -112,14 +100,7 @@ class NodeBalancing extends BSharpTreeTransition with NodeBalancingView {
       {required super.targetId,
       required super.firstOptionalTargetId,
       super.secondOptionalTargetId,
-      super.transitionTree}) {
-    var buffer = StringBuffer(
-        "Balanceando nodo $_targetId con nodo $_firstOptionalTargetId");
-    if (secondOptionalTargetId != null) {
-      buffer.write("y nodo $secondOptionalTargetId");
-    }
-    logger.debug(() => buffer.toString());
-  }
+      super.transitionTree});
   @override
   String toString() {
     return "Node balancing: $_targetId with $_firstOptionalTargetId ${secondOptionalTargetId != null ? "and $secondOptionalTargetId" : ""}";
@@ -127,10 +108,7 @@ class NodeBalancing extends BSharpTreeTransition with NodeBalancingView {
 }
 
 class NodeSplit extends BSharpTreeTransition with NodeSplitView {
-  NodeSplit({required super.targetId, required super.firstOptionalTargetId}) {
-    logger.debug(
-        () => "spliteando el nodo $_targetId con $_firstOptionalTargetId");
-  }
+  NodeSplit({required super.targetId, required super.firstOptionalTargetId});
   @override
   String toString() {
     return "Splitting node: $_targetId with $_firstOptionalTargetId";
@@ -141,14 +119,7 @@ class NodeFusion extends BSharpTreeTransition with NodeFusionView {
   NodeFusion(
       {required super.targetId,
       required super.firstOptionalTargetId,
-      super.secondOptionalTargetId}) {
-    var buffer = StringBuffer(
-        "fusionando nodo $_targetId con nodo $_firstOptionalTargetId");
-    if (secondOptionalTargetId != null) {
-      buffer.write("y nodo $secondOptionalTargetId");
-    }
-    logger.debug(() => buffer.toString());
-  }
+      super.secondOptionalTargetId});
   @override
   String toString() {
     return "Fusing node: $_targetId with $_firstOptionalTargetId ${secondOptionalTargetId != null ? "and $secondOptionalTargetId" : ""}";
@@ -156,9 +127,7 @@ class NodeFusion extends BSharpTreeTransition with NodeFusionView {
 }
 
 class NodeRelease extends BSharpTreeTransition with NodeReleaseView {
-  NodeRelease({required super.targetId, super.transitionTree}) {
-    logger.debug(() => "liberando el nodo $_targetId");
-  }
+  NodeRelease({required super.targetId, super.transitionTree});
   @override
   String toString() {
     return "Releasing node: ${super.toString()}";
@@ -166,9 +135,7 @@ class NodeRelease extends BSharpTreeTransition with NodeReleaseView {
 }
 
 class NodeFound extends BSharpTreeTransition with NodeFoundView {
-  NodeFound({required super.targetId}) {
-    logger.debug(() => "nodo encontrado $_targetId");
-  }
+  NodeFound({required super.targetId});
   @override
   String toString() {
     return "Node found: ${super.toString()}";
