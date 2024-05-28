@@ -677,5 +677,21 @@ void main() {
 
       expect(nodeId, "4");
     });
+
+    test("other find", () {
+      var tree = BSharpTree<num>(2);
+      tree.insertAll([10, 22, 150, 166, 210, 233, 370]);
+
+      var nodeId = tree.otherFind(166);
+
+      expect(nodeId, "8");
+    });
+
+    test("other insert", () {
+      var tree = BSharpTree<num>(2);
+      tree.insertAll([10, 22, 150, 166, 210, 233, 370]);
+
+      tree.otherInsert(900);
+    });
   });
 }

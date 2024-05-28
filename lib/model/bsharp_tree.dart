@@ -293,26 +293,78 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   String find(T value) {
     var modifier = NodeSearcher<String, T>(getNodeId);
     if (_rootNode != null) {
-      _searchTreeAndApplyFunctionToNode(_rootNode!, value, modifier);
+      //_searchTreeAndApplyFunctionToNode(_rootNode!, value, modifier);
     }
     return modifier.result!;
   }
 
-  void _searchTreeAndApplyFunctionToNode(
-      BSharpNode<T> current, T value, NodeModifier modifier) {
+  String otherFind(T value) {
+    var searcher = OtherNodeModifier<String, T>(getNodeId);
+    if (_rootNode != null) {
+      _searchTreeAndApplyFunctionToNode(_rootNode!, value, searcher);
+    }
+    return searcher.result!;
+  }
+
+  void otherInsert(T value) {
+    var adder =
+        OtherNodeModifier<IndexRecord, T>(addToSequentialNode, addToIndexNode);
+    if (_rootNode != null) {
+      _searchTreeAndApplyFunctionToNode(_rootNode!, value, adder);
+    }
+  }
+
+  IndexRecord? _searchTreeAndApplyFunctionToNode(
+      BSharpNode<T> current, T value, OtherNodeModifier modifier) {
     notifyObservers(NodeRead(targetId: current.id));
     //Base case of the recursion
     if (current.isLevelZero) {
       var sequentialNode = current as BSharpSequentialNode<T>;
-      modifier.applyFunctionToNode(sequentialNode);
+      modifier.applyFunctionToSequentialNode(sequentialNode, value);
+      if (modifier.changedStructure) {
+        var hasBalanced = tryToBalance(sequentialNode);
+        if (!hasBalanced) {
+          return modifyTreeStructure(sequentialNode);
+        }
+      }
     } else {
       var indexNode = current as BSharpIndexNode<T>;
       var nextNodeForRecursion = indexNode.findNextNodeForKey(value);
-      _searchTreeAndApplyFunctionToNode(nextNodeForRecursion, value, modifier);
+      var indexRecordToUpdate = _searchTreeAndApplyFunctionToNode(
+          nextNodeForRecursion, value, modifier);
+      if (indexRecordToUpdate != null) {
+        modifier.applyFunctionToIndexNode(indexNode, indexRecordToUpdate);
+        if (modifier.changedStructure) {
+          var hasBalanced = tryToBalance(indexNode);
+          if (!hasBalanced) {
+            return modifyTreeStructure(indexNode);
+          }
+        }
+      }
     }
+    return null;
   }
 
-  String getNodeId(BSharpNode node) {
+  void addToSequentialNode(BSharpSequentialNode<T> node, T valueToAdd) {
+    if (node.isValueOnNode(valueToAdd)) {
+      logger.error(
+          () => "el valor $valueToAdd ya se encuentra en el nodo ${node.id}");
+      throw ElementInsertionException(
+          "cant insert the value $valueToAdd, it's already on the tree");
+    }
+    node.addToNode(valueToAdd);
+    notifyObservers(
+        NodeWritten(targetId: node.id, transitionTree: this.clone()));
+  }
+
+  void addToIndexNode(BSharpIndexNode<T> node, IndexRecord<T> recordToAdd) {
+    node.addIndexRecordToNode(recordToAdd);
+    node.fixFamilyRelations();
+    notifyObservers(
+        NodeWritten(targetId: node.id, transitionTree: this.clone()));
+  }
+
+  String getNodeId(BSharpSequentialNode node, T value) {
     notifyObservers(NodeFound(targetId: node.id));
     return node.id;
   }
@@ -1006,6 +1058,18 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     freeNodesIds.add(node.id);
     nodesQuantity--;
   }
+
+  bool tryToBalance(BSharpNode<T> nodeTobalance) {
+    return false;
+  }
+
+  IndexRecord modifyTreeStructure(BSharpNode<T> nodeToUpdate) {
+    return IndexRecord<T>(nodeToUpdate.firstKey(), nodeToUpdate);
+  }
+}
+
+class SimpleNodeModifier<T extends Comparable<T>> {
+  bool changedStructure = false;
 }
 
 abstract class NodeModifier<S, T extends Comparable<T>> {
@@ -1030,3 +1094,52 @@ class NodeSearcher<S, T extends Comparable<T>> extends NodeModifier<S, T> {
     result = functionToApply(node);
   }
 }
+
+class OtherNodeModifier<S, T extends Comparable<T>> {
+  bool changedStructure = false;
+  S? result;
+  Function functionToApplyToSequentialNode;
+  Function? functionToApplyToIndexNode;
+
+  OtherNodeModifier(this.functionToApplyToSequentialNode,
+      [this.functionToApplyToIndexNode]);
+
+  void applyFunctionToSequentialNode(BSharpSequentialNode<T> node, T value) {
+    result = functionToApplyToSequentialNode(node, value);
+    if (node.isOverflowed() || node.isUnderflowed()) {
+      changedStructure = true;
+    }
+  }
+
+  void applyFunctionToIndexNode(BSharpIndexNode<T> node, IndexRecord record) {
+    if (functionToApplyToIndexNode != null) {
+      result = functionToApplyToIndexNode!(node, record);
+      if (node.isOverflowed() || node.isUnderflowed()) {
+        changedStructure = true;
+      }
+    }
+  }
+}
+
+/*class NodeAdder<S, T extends Comparable<T>> extends OtherNodeModifier<S, T> {
+  NodeAdder(
+      super.functionToApplyToSequentialNode, super.functionToApplyToIndexNode);
+
+  @override
+  void applyFunctionToSequentialNode(BSharpSequentialNode<T> node, T value) {
+    result = functionToApplyToSequentialNode(node, value);
+  }
+
+  @override
+  void applyFunctionToIndexNode(
+      BSharpIndexNode<T> node, IndexRecord<Comparable> record) {
+    if (functionToApplyToIndexNode != null) {
+      result = functionToApplyToIndexNode!(node, record);
+      if (node.isOverflowed() || node.isUnderflowed()) {
+        changedStructure = true;
+      }
+    } else {
+      throw UnsupportedError("function to apply not found");
+    }
+  }
+}*/
