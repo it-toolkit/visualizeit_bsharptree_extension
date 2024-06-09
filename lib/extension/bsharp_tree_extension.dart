@@ -33,7 +33,7 @@ class BSharpTreeExtensionBuilder implements ExtensionBuilder {
 
 class BSharpTreeExtension extends DefaultScriptingExtension
     implements ScriptingExtension, VisualizerExtension {
-  static const extensionId = "bsharp-tree-extension";
+  static const extensionId = "bsharptree-extension";
 
   BSharpTreeExtension()
       : super({

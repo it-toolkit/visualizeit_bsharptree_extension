@@ -1,6 +1,6 @@
-# B-\# Tree Extension
+# B\# Tree Extension
 
-This is the B-\# Tree extension usage doc.
+This is the B\# Tree extension usage doc.
 
 ## Available commands
 
