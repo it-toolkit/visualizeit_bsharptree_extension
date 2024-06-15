@@ -12,21 +12,34 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   final int maxCapacity;
   int nodesQuantity = 0;
   int lastNodeId = 0;
+  bool keysAreAutoincremental = false;
+  T? lastKeyAddedToTree;
+
+  //var balanceHandlerStrategyProvider = BalanceHandlerStrategyProvider();
+  //late BalanceHandler balanceHandler;
 
   final logger = Logger("extension.bsharptree.model");
 
   List<String> freeNodesIds = [];
 
-  BSharpTree(this.maxCapacity);
+  BSharpTree(this.maxCapacity, {this.keysAreAutoincremental = false}) {
+    /*balanceHandler =
+        balanceHandlerStrategyProvider.getBalanceHandler(isAutoIncrementedTree);*/
+  }
 
-  BSharpTree._copy(this._rootNode, this.maxCapacity, this.nodesQuantity,
-      this.freeNodesIds, this.lastNodeId);
+  BSharpTree._copy(
+      this._rootNode,
+      this.maxCapacity,
+      this.nodesQuantity,
+      this.freeNodesIds,
+      this.lastNodeId,
+      this.keysAreAutoincremental,
+      this.lastKeyAddedToTree);
 
   int get _rootMaxCapacity => (4 * maxCapacity) ~/ 3;
   int get depth => _rootNode?.level ?? 0;
 
   bool isRoot(BSharpNode<T> node) => node.id == _rootNode?.id;
-  //List<BSharpTreeTransition> getTransitions() => transitions;
 
   /// Inserts a new [value] in the B# tree
   ///
@@ -37,6 +50,13 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   /// May cause the B# tree to split nodes or grow on height or width
   void insert(T value) {
     logger.debug(() => "insertando value: $value");
+    if (keysAreAutoincremental) {
+      if (lastKeyAddedToTree != null &&
+          lastKeyAddedToTree!.compareTo(value) > 0) {
+        throw ElementInsertionException(
+            "cant insert the value $value, it's smaller than the last value added to the tree");
+      }
+    }
     if (_rootNode == null) {
       _rootNode = _buildRootSequentialNode([value]);
       nodesQuantity = 2;
@@ -54,8 +74,11 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         if (node.isOverflowed()) {
           notifyObservers(
               NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-          var leftNode = _buildSequentialNode(node.getFirstHalfOfValues());
-          var rightNode = _buildSequentialNode(node.getLastHalfOfValues());
+          BSharpSequentialNode<T> leftNode;
+          BSharpSequentialNode<T> rightNode;
+
+          (leftNode, rightNode) = _splitRootNodesInTwo(node);
+
           leftNode.nextNode = rightNode;
           //Crear el nuevo nodo indice raiz que va a reemplazar al nodo secuencia
           var newRoot = _buildRootIndexNode(
@@ -66,9 +89,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
           _rootNode = newRoot;
           notifyObservers(
               NodeWritten(targetId: leftNode.id, transitionTree: this));
-          notifyObservers(
-            NodeWritten(targetId: rightNode.id),
-          );
+          notifyObservers(NodeWritten(targetId: rightNode.id));
           notifyObservers(
               NodeWritten(targetId: newRoot.id, transitionTree: this));
         }
@@ -78,6 +99,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     }
 
     logger.debug(() => _printTree());
+    lastKeyAddedToTree = value;
   }
 
   /// Removes a [value] from the B# tree, if it can be found
@@ -87,34 +109,11 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   ///
   /// May cause the tree to fuse nodes and shrink in height or width
   void remove(T value) {
-    //transitions = [];
     logger.debug(() => "eliminando value: $value");
     if (_rootNode != null) {
       _removeRecursively(_rootNode!, value);
     }
     logger.debug(() => _printTree());
-  }
-
-  /// Prints every sequential node, with their values
-  ///
-  /// It traverse all the tree until it founds the smallest value, then uses the pointers to the next node to
-  /// print every node id and values
-  void traverse() {
-    if (_rootNode != null) {
-      //Encontramos el nodo hoja de menores valores (el de mas a la izquierda)
-      var node = _rootNode!;
-      while (!node.isLevelZero) {
-        node = (node as BSharpIndexNode<T>).leftNode;
-      }
-      //Recorremos los nodos hoja en forma secuencial
-      BSharpSequentialNode<T>? traverseNode = node as BSharpSequentialNode<T>;
-      while (traverseNode != null) {
-        print("${traverseNode.id}:${traverseNode.values}");
-        traverseNode = traverseNode.nextNode;
-      }
-    } else {
-      print("no values to show");
-    }
   }
 
   Map<int, List<BSharpNode<T>>> getAllNodesByLevel() {
@@ -170,14 +169,8 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       if (node.isOverflowed()) {
         notifyObservers(
             NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-        var hasBalancedWithSibling =
-            _tryToBalanceSequentialNodesWithSibling(node);
 
-        if (!hasBalancedWithSibling) {
-          // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
-          // ambos nodos, crear uno nuevo en el medio y repartir las claves en 3
-          return _splitSequentialNodeWithAnySibling(node);
-        }
+        return _balanceSequentialNodeOverflow(node);
       }
     } else {
       var node = current as BSharpIndexNode<T>;
@@ -195,17 +188,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         if (node.isOverflowed()) {
           notifyObservers(
               NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-          if (!isRoot(node)) {
-            var hasBalancedWithSibling =
-                _tryToBalanceOverflowedIndexNodeWithSiblings(node);
-            if (!hasBalancedWithSibling) {
-              //no puedo rotar ni a izq ni a derecha, tengo que juntar las claves y dividir el nodo en 3
-              return _splitSiblingIndexNodeWithAnySibling(node);
-            }
-          } else {
-            //current es la raiz y tengo que dividirla en dos
-            _splitIndexRootNode(node);
-          }
+          return _balanceIndexNodeOverflow(node);
         }
       }
     }
@@ -227,16 +210,29 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         node.removeValue(value);
         notifyObservers(
             NodeWritten(targetId: node.id, transitionTree: this.clone()));
-        if (!isRoot(node) && node.isUnderflowed()) {
-          notifyObservers(
-              NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
-          var hasBalancedWithSibling =
-              _tryToBalanceUnderflowedSequentialNodeWithSiblings(node);
 
-          if (!hasBalancedWithSibling) {
-            // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
-            // ambos nodos
-            return _fuseSequentialNodeWithAnySibling(node);
+        if (!isRoot(node) && node.isUnderflowed()) {
+          var isTheLastBranch = node.getParent()!.rightSibling == null;
+          if (keysAreAutoincremental && isTheLastBranch) {
+            if (node.values.isEmpty) {
+              var parentNode = node.getParent()!;
+              var indexRecordToUpdate = parentNode.findIndexRecordById(node.id);
+              _release(node);
+              notifyObservers(
+                  NodeRelease(targetId: node.id, transitionTree: this.clone()));
+              return indexRecordToUpdate;
+            }
+          } else {
+            notifyObservers(
+                NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
+            var hasBalancedWithSibling =
+                _tryToBalanceUnderflowedSequentialNodeWithSiblings(node);
+
+            if (!hasBalancedWithSibling) {
+              // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
+              // ambos nodos
+              return _fuseSequentialNodeWithAnySibling(node);
+            }
           }
         }
       } else {
@@ -257,10 +253,21 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
               NodeWritten(targetId: node.id, transitionTree: this.clone()));
           notifyObservers(
               NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
-          var hasBalancedWithSibling =
-              _tryToBalanceUnderflowedIndexNodeWithSiblings(node);
-          if (!hasBalancedWithSibling) {
-            return _fuseIndexNodesWithAnySibling(node);
+
+          var isTheLastBranch = node.rightSibling == null;
+          if (!keysAreAutoincremental || !isTheLastBranch) {
+            var hasBalancedWithSibling =
+                _tryToBalanceUnderflowedIndexNodeWithSiblings(node);
+            if (!hasBalancedWithSibling) {
+              return _fuseIndexNodesWithAnySibling(node);
+            }
+          } else {
+            if (node.leftNode.length() == 0 && node.rightNodes.isEmpty) {
+              var indexRecord = node.getParent()!.findIndexRecordById(node.id);
+              _release(node);
+              return indexRecord;
+            }
+            node.fixFamilyRelations();
           }
         } else {
           if (node.parent == null && node.length() == 0) {
@@ -285,6 +292,13 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
           notifyObservers(NodeWritten(targetId: node.id, transitionTree: this));
         }
+      } else {
+        if (node.leftNode.length() == 0 && node.rightNodes.isEmpty) {
+          var indexRecord = node.getParent()!.findIndexRecordById(node.id);
+          _release(node);
+          return indexRecord;
+        }
+        node.fixFamilyRelations();
       }
     }
     return null;
@@ -456,7 +470,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     node.values = allKeys.sublist(0, allKeys.length ~/ 2);
     siblingNode.values = allKeys.sublist(allKeys.length ~/ 2);
     if (siblingRecord != null) {
-      siblingRecord.key = siblingNode.firstKey();
+      siblingRecord.key = siblingNode.firstKey()!;
     }
 
     notifyObservers(NodeBalancing(
@@ -489,14 +503,14 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
     siblingNode.values = allKeys.sublist((allKeys.length * 2) ~/ 3);
     if (siblingRecord != null) {
-      siblingRecord.key = siblingNode.firstKey();
+      siblingRecord.key = siblingNode.firstKey()!;
     }
 
     notifyObservers(NodeWritten(
         targetId: newNode.id,
         transitionTree: this
             .clone())); //TODO acá se deberian escribir tambien los otros nodos
-    return IndexRecord(newNode.firstKey(), newNode);
+    return IndexRecord(newNode.firstKey()!, newNode);
   }
 
   /// Prints all the nodes info from the tree, starting from the root
@@ -542,7 +556,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     node.values = allKeys;
     node.nextNode = siblingNode.nextNode;
     if (nodeRecord != null) {
-      nodeRecord.key = node.firstKey();
+      nodeRecord.key = node.firstKey()!;
     }
 
     _release(siblingNode);
@@ -652,11 +666,11 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     leftSiblingNode.nextNode = rightSiblingNode; //TODO chequear los nextNode
 
     if (leftSiblingRecord != null) {
-      leftSiblingRecord.key = leftSiblingNode.firstKey();
+      leftSiblingRecord.key = leftSiblingNode.firstKey()!;
     }
 
     if (rightSiblingRecord != null) {
-      rightSiblingRecord.key = rightSiblingNode.firstKey();
+      rightSiblingRecord.key = rightSiblingNode.firstKey()!;
     }
 
     notifyObservers(NodeFusion(
@@ -819,11 +833,11 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     rightSiblingNode.values = allKeys.sublist((allKeys.length * 2) ~/ 3);
 
     if (centerSiblingRecord != null) {
-      centerSiblingRecord.key = centerSiblingNode.firstKey();
+      centerSiblingRecord.key = centerSiblingNode.firstKey()!;
     }
 
     if (rightSiblingRecord != null) {
-      rightSiblingRecord.key = rightSiblingNode.firstKey();
+      rightSiblingRecord.key = rightSiblingNode.firstKey()!;
     }
 
     notifyObservers(NodeBalancing(
@@ -906,8 +920,14 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       rootNode = _cloneRecursively(_rootNode!);
     }
 
-    return BSharpTree<T>._copy(rootNode, maxCapacity, nodesQuantity,
-        List.of(freeNodesIds), lastNodeId);
+    return BSharpTree<T>._copy(
+        rootNode,
+        maxCapacity,
+        nodesQuantity,
+        List.of(freeNodesIds),
+        lastNodeId,
+        keysAreAutoincremental,
+        lastKeyAddedToTree);
   }
 
   BSharpNode<T> _cloneRecursively(BSharpNode<T> node) {
@@ -1006,6 +1026,95 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     freeNodesIds.add(node.id);
     nodesQuantity--;
   }
+
+  (BSharpSequentialNode<T>, BSharpSequentialNode<T>) _splitRootNodesInTwo(
+      BSharpSequentialNode<T> node) {
+    if (keysAreAutoincremental) {
+      return (
+        _buildSequentialNode(node.values.sublist(0, maxCapacity)),
+        _buildSequentialNode(node.values.sublist(maxCapacity))
+      );
+    } else {
+      return (
+        _buildSequentialNode(node.getFirstHalfOfValues()),
+        _buildSequentialNode(node.getLastHalfOfValues())
+      );
+    }
+  }
+
+  IndexRecord<T>? _balanceSequentialNodeOverflow(BSharpSequentialNode<T> node) {
+    IndexRecord<T>? indexRecord;
+    if (keysAreAutoincremental) {
+      var lastValue = node.values.removeLast();
+      var newNode = _buildSequentialNode([lastValue]);
+      node.nextNode = newNode;
+      notifyObservers(
+          NodeWritten(targetId: newNode.id, transitionTree: this.clone()));
+      indexRecord = IndexRecord(newNode.firstKey()!, newNode);
+    } else {
+      var hasBalancedWithSibling =
+          _tryToBalanceSequentialNodesWithSibling(node);
+
+      if (!hasBalancedWithSibling) {
+        // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
+        // ambos nodos, crear uno nuevo en el medio y repartir las claves en 3
+        indexRecord = _splitSequentialNodeWithAnySibling(node);
+      }
+    }
+    return indexRecord;
+  }
+
+  IndexRecord<T>? _balanceIndexNodeOverflow(BSharpIndexNode<T> node) {
+    IndexRecord<T>? indexRecord;
+    if (keysAreAutoincremental) {
+      if (!isRoot(node)) {
+        var lastIndexRecord = node.rightNodes.removeLast();
+        var newNode =
+            _buildIndexNode(lastIndexRecord.rightNode, [], node.level);
+
+        node.fixFamilyRelations();
+        newNode.fixFamilyRelations();
+        notifyObservers(NodeWritten(targetId: newNode.id));
+        notifyObservers(
+            NodeWritten(targetId: node.id, transitionTree: this.clone()));
+
+        indexRecord = IndexRecord(lastIndexRecord.key, newNode);
+      } else {
+        var recordToPromote = node.rightNodes.elementAt(maxCapacity);
+
+        var newLeftNode = _buildIndexNode(
+            node.leftNode, node.rightNodes.sublist(0, maxCapacity), node.level);
+        var newRightNode = _buildIndexNode(recordToPromote.rightNode,
+            node.rightNodes.sublist(maxCapacity + 1), node.level);
+
+        node.leftNode = newLeftNode;
+        node.rightNodes = [IndexRecord(recordToPromote.key, newRightNode)];
+        node.level += 1;
+
+        newLeftNode.fixFamilyRelations();
+        newRightNode.fixFamilyRelations();
+        node.fixFamilyRelations();
+
+        notifyObservers(NodeWritten(targetId: newLeftNode.id));
+        notifyObservers(NodeWritten(targetId: newRightNode.id));
+        notifyObservers(
+            NodeWritten(targetId: node.id, transitionTree: this.clone()));
+      }
+    } else {
+      if (!isRoot(node)) {
+        var hasBalancedWithSibling =
+            _tryToBalanceOverflowedIndexNodeWithSiblings(node);
+        if (!hasBalancedWithSibling) {
+          //no puedo rotar ni a izq ni a derecha, tengo que juntar las claves y dividir el nodo en 3
+          indexRecord = _splitSiblingIndexNodeWithAnySibling(node);
+        }
+      } else {
+        //current es la raiz y tengo que dividirla en dos
+        _splitIndexRootNode(node);
+      }
+    }
+    return indexRecord;
+  }
 }
 
 abstract class NodeModifier<S, T extends Comparable<T>> {
@@ -1030,3 +1139,42 @@ class NodeSearcher<S, T extends Comparable<T>> extends NodeModifier<S, T> {
     result = functionToApply(node);
   }
 }
+
+/*class BalanceHandlerStrategyProvider {
+  var _autoincrementalKeysBalanceHandler = AutoincrementalKeysBalanceHandler();
+  var _unsortedKeysBalanceHandler = UnsortedKeysBalanceHandler();
+
+  BalanceHandlerStrategyProvider();
+
+  BalanceHandler getBalanceHandler(bool keysAreAutoincremental) {
+    if (keysAreAutoincremental) {
+      return _autoincrementalKeysBalanceHandler;
+    } else {
+      return _unsortedKeysBalanceHandler;
+    }
+  }
+}
+
+abstract class BalanceHandler {
+  (BSharpSequentialNode, BSharpSequentialNode) splitRootNodeValuesInTwo(
+      BSharpSequentialNode node, BSharpSequentialNode Function() nodeBuildingFunction);
+  //IndexRecord? balanceSequentialNodeOverflow();
+  //IndexRecord? balanceSequentialNodeUnderflow();
+  //IndexRecord? balanceIndexNodeOverflow();
+  //IndexRecord? balanceIndexNodeUnderflow();
+}
+
+class AutoincrementalKeysBalanceHandler extends BalanceHandler {
+  @override
+  (BSharpSequentialNode<Comparable>, BSharpSequentialNode<Comparable>) splitRootNodeValuesInTwo(BSharpSequentialNode<Comparable> node) {
+    // TODO: implement splitRootNodeValuesInTwo
+    throw UnimplementedError();
+  }
+}
+
+class UnsortedKeysBalanceHandler extends BalanceHandler {
+  @override
+  (BSharpSequentialNode<Comparable>, BSharpSequentialNode<Comparable>) splitRootNodeValuesInTwo(BSharpSequentialNode<Comparable> node) {
+    return (_buildSequentialNode(node.getFirstHalfOfValues()),_buildSequentialNode(node.getLastHalfOfValues());
+  }
+}*/

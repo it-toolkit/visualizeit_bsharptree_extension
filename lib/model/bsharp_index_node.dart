@@ -17,17 +17,13 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
 
     for (var i = 0; i < allChildrenNodes.length; i++) {
       var node = allChildrenNodes.elementAt(i);
+      var rightSibling = i + 1 < allChildrenNodes.length
+          ? allChildrenNodes.elementAt(i + 1)
+          : null;
+      var leftSibling = i - 1 >= 0 ? allChildrenNodes.elementAt(i - 1) : null;
       node.parent = this;
-      if (i == 0) {
-        node.leftSibling = null;
-        node.rightSibling = allChildrenNodes.elementAt(i + 1);
-      } else if (i == allChildrenNodes.length - 1) {
-        node.rightSibling = null;
-        node.leftSibling = allChildrenNodes.elementAt(i - 1);
-      } else {
-        node.rightSibling = allChildrenNodes.elementAt(i + 1);
-        node.leftSibling = allChildrenNodes.elementAt(i - 1);
-      }
+      node.leftSibling = leftSibling;
+      node.rightSibling = rightSibling;
     }
   }
 
@@ -47,8 +43,8 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
   }
 
   @override
-  T firstKey() {
-    return rightNodes.first.key;
+  T? firstKey() {
+    return rightNodes.isNotEmpty ? rightNodes.first.key : null;
   }
 
   IndexRecord<T>? findIndexRecordFor(T keyToFind) {
@@ -93,7 +89,7 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
       super.parent != null ? super.parent as BSharpIndexNode<T> : null;
 
   BSharpNode<T> findNextNodeForKey(T keyToFind) {
-    if (keyToFind.compareTo(firstKey()) < 0) {
+    if (firstKey() == null || keyToFind.compareTo(firstKey()!) < 0) {
       //Si es menor al primer nodo derecho, tomo el izquierdo
       return leftNode;
     } else {

@@ -296,6 +296,22 @@ void main() {
       TreeLoggerObserver(tree);
       expect(tree.depth, 0);
     });
+
+    test("insert with autoincremental values", () {
+      var tree = BSharpTree<num>(3, keysAreAutoincremental: true);
+      TreeLoggerObserver(tree);
+      for (var i = 1; i < 26; i++) {
+        tree.insert(i);
+      }
+    });
+
+    test("try to insert a lower value in autoincremental tree", () {
+      var tree = BSharpTree<num>(3, keysAreAutoincremental: true);
+      TreeLoggerObserver(tree);
+      tree.insertAll([1, 2, 3, 4, 5, 6, 7, 11]);
+      expect(() => tree.insert(9),
+          throwsA(const TypeMatcher<ElementInsertionException>()));
+    });
   });
 
   group("remove value tests - ", () {
@@ -656,6 +672,40 @@ void main() {
       tree.insert(39);
 
       expect(tree.lastNodeId, lastNodeIdBeforeInsert + 1);
+    });
+
+    test("remove value not in the last branch, in tree with autoincremental values", () {
+      var tree = BSharpTree<num>(3, keysAreAutoincremental: true);
+      TreeLoggerObserver(tree);
+      for (var i = 1; i < 26; i++) {
+        tree.insert(i);
+      }
+
+      tree.remove(5);
+      tree.remove(6);
+      tree.remove(4);
+      tree.remove(3);
+      tree.remove(2);
+      tree.remove(1);
+      tree.remove(7);
+
+    });
+
+    test("remove value in the last branch, in tree with autoincremental values", () {
+      var tree = BSharpTree<num>(3, keysAreAutoincremental: true);
+      TreeLoggerObserver(tree);
+      for (var i = 1; i < 31; i++) {
+        tree.insert(i);
+      }
+      //tree.remove(25);
+
+      tree.remove(30);
+      tree.remove(29);
+      tree.remove(28);
+      tree.remove(25);
+      tree.remove(26);
+      tree.remove(27);
+
     });
   });
 

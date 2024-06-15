@@ -18,7 +18,7 @@ abstract class BSharpNode<T extends Comparable<T>> {
 
   BSharpNode(this.id, this.level, this.maxCapacity);
   int length();
-  T firstKey();
+  T? firstKey();
 
   //Map toJson();
 }

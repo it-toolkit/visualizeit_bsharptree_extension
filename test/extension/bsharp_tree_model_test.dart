@@ -19,6 +19,7 @@ void main() {
     expect(model.name, equals("name"));
     expect(model.currentTree!.maxCapacity, treeCapacity);
     expect(model.currentTree!.nodesQuantity, 0);
+    expect(model.currentTree!.keysAreAutoincremental, isFalse);
   });
 
   test("model creation with initial values", () {
@@ -32,6 +33,21 @@ void main() {
     expect(model.name, equals("name"));
     expect(model.currentTree!.maxCapacity, treeCapacity);
     expect(model.currentTree!.nodesQuantity, 2);
+    expect(model.currentTree!.keysAreAutoincremental, isFalse);
+  });
+
+  test("model creation with initial values and incremental tree", () {
+    int treeCapacity = 3;
+    BSharpTreeModel model = BSharpTreeModel("name", treeCapacity, [3, 7, 15], true);
+
+    expect(
+      model.currentTree,
+      isA<BSharpTree<num>>(),
+    );
+    expect(model.name, equals("name"));
+    expect(model.currentTree!.maxCapacity, treeCapacity);
+    expect(model.currentTree!.nodesQuantity, 2);
+    expect(model.currentTree!.keysAreAutoincremental, isTrue);
   });
 
   group("insert command execution", () {

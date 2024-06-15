@@ -24,7 +24,7 @@ class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T> {
   List<T> getLastHalfOfValues() => values.sublist(length() ~/ 2);
 
   @override
-  T firstKey() => values.first;
+  T? firstKey() => values.isNotEmpty ? values.first : null;
 
   BSharpSequentialNode<T>? getLeftSibling() => super.leftSibling != null
       ? super.leftSibling as BSharpSequentialNode<T>
@@ -43,7 +43,7 @@ class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T> {
       IndexRecord<T>? nodeIndexRecord = parentNode.findIndexRecordById(id);
       //Se actualiza la key del index record
       if (nodeIndexRecord != null && length() > 0) {
-        nodeIndexRecord.key = nodeIndexRecord.rightNode.firstKey();
+        nodeIndexRecord.key = nodeIndexRecord.rightNode.firstKey()!; //TODO asegurarse que el ! este correcto acá
       }
     }
   }

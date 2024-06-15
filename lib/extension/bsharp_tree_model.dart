@@ -15,8 +15,8 @@ class BSharpTreeModel extends Model {
   int _currentFrame = 0;
   BSharpTreeCommand? commandInExecution;
 
-  BSharpTreeModel(String name, int treeCapacity, List<int> initialValues)
-      : _baseTree = BSharpTree<num>(treeCapacity),
+  BSharpTreeModel(String name, int treeCapacity, List<int> initialValues, [bool autoIncremental = false])
+      : _baseTree = BSharpTree<num>(treeCapacity, keysAreAutoincremental: autoIncremental),
         super(BSharpTreeExtension.extensionId, name) {
     loggerObserver = TreeLoggerObserver(_baseTree);
     _baseTree.insertAll(initialValues);

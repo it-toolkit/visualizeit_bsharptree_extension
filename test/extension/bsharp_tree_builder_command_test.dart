@@ -8,7 +8,7 @@ class CommandContextMock extends Mock implements CommandContext {}
 
 void main() {
   var commandContextMock = CommandContextMock();
-  test("Call test", () {
+  test("Build tree without autoincremental parameter", () {
     var command = BSharpTreeBuilderCommand(3, []);
 
     var model = command.call(commandContextMock);
@@ -18,5 +18,19 @@ void main() {
     expect(model.currentTree!.maxCapacity, 3);
     expect(model.currentTree!.nodesQuantity, 0);
     expect(model.currentTree!.depth, 0);
+    expect(model.currentTree!.keysAreAutoincremental, false);
+  });
+
+  test("Build tree with autoincremental parameter", () {
+    var command = BSharpTreeBuilderCommand(3, [], true);
+
+    var model = command.call(commandContextMock);
+    expect(model.extensionId, BSharpTreeExtension.extensionId);
+    expect(model.name,
+        ""); //TODO arreglar este test cuando entienda que es el name
+    expect(model.currentTree!.maxCapacity, 3);
+    expect(model.currentTree!.nodesQuantity, 0);
+    expect(model.currentTree!.depth, 0);
+    expect(model.currentTree!.keysAreAutoincremental, true);
   });
 }
