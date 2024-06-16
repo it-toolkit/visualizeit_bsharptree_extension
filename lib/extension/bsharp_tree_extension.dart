@@ -6,10 +6,14 @@ import 'package:visualizeit_bsharptree_extension/widget/tree_widget.dart';
 import 'package:visualizeit_extensions/common.dart';
 import 'package:visualizeit_extensions/extension.dart';
 import 'package:visualizeit_extensions/logging.dart';
-import 'package:visualizeit_extensions/scripting.dart';
-import 'package:visualizeit_extensions/visualizer.dart';
 
 final _logger = Logger("extension.bsharptree");
+
+final class BSharpTreeExtension extends Extension {
+  static const extensionId = "bsharptree-extension";
+
+  BSharpTreeExtension._create({required super.markdownDocs, required super.extensionCore}) : super.create(id: extensionId);
+}
 
 class BSharpTreeExtensionBuilder implements ExtensionBuilder {
   static const _docsLocationPath =
@@ -19,23 +23,19 @@ class BSharpTreeExtensionBuilder implements ExtensionBuilder {
   @override
   Future<Extension> build() async {
     _logger.trace(() => "Building B# Tree extension");
-    var extension = BSharpTreeExtension();
 
     final markdownDocs = {
       for (final languageCode in _availableDocsLanguages)
         languageCode: '$_docsLocationPath/$languageCode.md'
     };
 
-    return Extension(
-        BSharpTreeExtension.extensionId, extension, extension, markdownDocs);
+    return BSharpTreeExtension._create(markdownDocs: markdownDocs, extensionCore: BSharpTreeExtensionCore());
   }
 }
 
-class BSharpTreeExtension extends DefaultScriptingExtension
-    implements ScriptingExtension, VisualizerExtension {
-  static const extensionId = "bsharptree-extension";
+class BSharpTreeExtensionCore extends SimpleExtensionCore {
 
-  BSharpTreeExtension()
+  BSharpTreeExtensionCore()
       : super({
           BSharpTreeBuilderCommand.commandDefinition:
               BSharpTreeBuilderCommand.build,
