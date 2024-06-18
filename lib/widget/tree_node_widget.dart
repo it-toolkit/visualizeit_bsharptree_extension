@@ -13,7 +13,8 @@ class TreeNodeWidget extends StatelessWidget {
   final BSharpTreeTransition? transition;
   final double scaleFactor;
 
-  const TreeNodeWidget(this.node, this.transition, {this.scaleFactor = 1.0, super.key});
+  const TreeNodeWidget(this.node, this.transition,
+      {this.scaleFactor = 1.0, super.key});
 
   List<Component> buildComponents() {
     final valueNodes = <Widget>[];
@@ -44,6 +45,14 @@ class TreeNodeWidget extends StatelessWidget {
                   Alignment.topCenter,
                   straight: true),
         ]);
+      } else {
+        valueNodes.add(_boxContainer(" ", colorByCapacityState).link(
+            "${nodeId}_${indexNode.leftNode.id}",
+            Alignment.bottomLeft,
+            indexNode.leftNode.id,
+            Alignment.topCenter,
+            straight: true));
+        valueNodes.add(const Spacer());
       }
 
       for (var indexRecord in nextValues) {
@@ -93,6 +102,7 @@ class TreeNodeWidget extends StatelessWidget {
         const Alignment(0, 5),
         Row(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: valueNodes,
         ),
       ),
@@ -107,7 +117,7 @@ class TreeNodeWidget extends StatelessWidget {
     var boxBorderColor = transition != null
         ? transition!.getBoxBorderColorForWidget()
         : Colors.black;
-
+    var scaledBorderRadius = 10 * scaleFactor;
     return ArrowElement(
         id: node.id,
         child: Container(
@@ -119,7 +129,8 @@ class TreeNodeWidget extends StatelessWidget {
                     color: boxBorderColor,
                     strokeAlign: BorderSide.strokeAlignOutside),
                 color: Colors.white,
-                borderRadius: const BorderRadius.all(Radius.circular(10)),
+                borderRadius:
+                    BorderRadius.all(Radius.circular(scaledBorderRadius)),
                 boxShadow: const [
                   BoxShadow(blurRadius: 5),
                 ]),
@@ -145,7 +156,7 @@ class TreeNodeWidget extends StatelessWidget {
             alignment: Alignment.bottomRight,
             padding: const EdgeInsets.fromLTRB(0.0, 1.0, 3.5, 1.0),
             child: SizedBox(
-              width: 30.0 + text.length.toDouble() * 1.5 * scaleFactor,
+              width: (30.0 + text.length.toDouble() * 1.5) * scaleFactor,
               height: 18 * scaleFactor,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -164,7 +175,8 @@ class TreeNodeWidget extends StatelessWidget {
       widgets.add(
           Container(alignment: Alignment.topLeft, child: components[0].widget));
     }
-    widgets.add(Container(child: components[1].widget));
+    widgets.add(Container(
+        alignment: Alignment.bottomCenter, child: components[1].widget));
     return widgets;
   }
 

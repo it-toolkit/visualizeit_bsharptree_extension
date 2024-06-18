@@ -37,7 +37,7 @@ class _TreeWidgetState extends State<TreeWidget> {
             level,
             listOfNodes.map((node) {
               var widthOfLevel =
-                  listOfNodes.length * widget.tree.maxCapacity * 60;
+                  listOfNodes.length * widget.tree.maxCapacity * 65;
 
               double? scaleFactor = widthOfLevel > screenWidth
                   ? (screenWidth / widthOfLevel)
@@ -69,7 +69,6 @@ class _TreeWidgetState extends State<TreeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height - 125.0;
     double screenWidth = MediaQuery.of(context).size.width;
     _components = createWidgetsFromTree(screenWidth);
 
@@ -127,7 +126,7 @@ class _TreeWidgetState extends State<TreeWidget> {
       )
     ];
 
-    List<Widget> treeNodeRows = [const Spacer()];
+    List<Widget> treeNodeRows = [];
     for (var mapEntry in _components!.entries) {
       List<Widget> children = mapEntry.value.fold(
           [],
@@ -141,26 +140,19 @@ class _TreeWidgetState extends State<TreeWidget> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: children,
         ),
-        const Spacer()
+        const Spacer(),
       ]);
     }
 
     rows.add(Expanded(
-        child: InteractiveViewer(
-            alignment: Alignment.center,
-            boundaryMargin: const EdgeInsets.all(double.infinity),
-            clipBehavior: Clip.antiAlias,
-            minScale: 0.01,
-            maxScale: 4.0,
-            constrained: false,
-            child: SizedBox(
-              height: screenHeight,
-              width: screenWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: treeNodeRows,
-              ),
-            ))));
+        child: Padding(
+          padding: const EdgeInsets.only(top: 5.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: treeNodeRows,
+          ),
+        )));
 
     rows.add(Row(
       mainAxisAlignment: MainAxisAlignment.end,
