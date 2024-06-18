@@ -16,8 +16,8 @@ class AnotherModelMock extends Mock implements Model {}
 
 class BuildContextMock extends Mock implements BuildContext {}
 
-void main() {
-  var extension = BSharpTreeExtension();
+void main() async {
+  var extension = await (BSharpTreeExtensionBuilder().build());
   var treeModelMock = BSharpTreeModelMock();
   var buildContextMock = BuildContextMock();
   var anotherModelMock = AnotherModelMock();
@@ -25,7 +25,7 @@ void main() {
   group("Extension tests - ", () {
     test("command definitions must be 4", () {
       expect(
-          extension.getAllCommandDefinitions(),
+          extension.scripting.getAllCommandDefinitions(),
           allOf(
               hasLength(4),
               containsAll([
@@ -41,7 +41,7 @@ void main() {
         "maxCapacity": "3",
         "initialValues": ["1", "3"]
       });
-      var maybeCommand = extension.buildCommand(rawCommand);
+      var maybeCommand = extension.scripting.buildCommand(rawCommand);
       expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeBuilderCommand>()));
       var builderCommand = maybeCommand as BSharpTreeBuilderCommand;
       expect(builderCommand.maxCapacity, 3);
@@ -50,7 +50,7 @@ void main() {
 
      test("build tree builder command with initial values and autoincremental", () {
       var rawCommand = RawCommand.withPositionalArgs("bsharptree-create", [3,["1", "3"],true]);
-      var maybeCommand = extension.buildCommand(rawCommand);
+      var maybeCommand = extension.scripting.buildCommand(rawCommand);
       expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeBuilderCommand>()));
       var builderCommand = maybeCommand as BSharpTreeBuilderCommand;
       expect(builderCommand.maxCapacity, 3);
@@ -61,7 +61,7 @@ void main() {
     test("build tree builder command with no initial values", () {
       var rawCommand = RawCommand.withNamedArgs(
           "bsharptree-create", {"maxCapacity": "3", "initialValues": []});
-      var maybeCommand = extension.buildCommand(rawCommand);
+      var maybeCommand = extension.scripting.buildCommand(rawCommand);
       expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeBuilderCommand>()));
       var builderCommand = maybeCommand as BSharpTreeBuilderCommand;
       expect(builderCommand.maxCapacity, 3);
@@ -71,7 +71,7 @@ void main() {
     test("tree insert value command", () {
       var rawCommand =
           RawCommand.withNamedArgs("bsharptree-insert", {"value": "90"});
-      var maybeCommand = extension.buildCommand(rawCommand);
+      var maybeCommand = extension.scripting.buildCommand(rawCommand);
       expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeInsertCommand>()));
       var insertCommand = maybeCommand as BSharpTreeInsertCommand;
       expect(insertCommand.value, 90);
@@ -80,7 +80,7 @@ void main() {
     test("tree remove value command", () {
       var rawCommand =
           RawCommand.withNamedArgs("bsharptree-remove", {"value": "90"});
-      var maybeCommand = extension.buildCommand(rawCommand);
+      var maybeCommand = extension.scripting.buildCommand(rawCommand);
       expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeRemoveCommand>()));
       var removeCommand = maybeCommand as BSharpTreeRemoveCommand;
       expect(removeCommand.value, 90);
@@ -89,7 +89,7 @@ void main() {
     test("tree find value command", () {
       var rawCommand =
           RawCommand.withNamedArgs("bsharptree-find", {"value": "90"});
-      var maybeCommand = extension.buildCommand(rawCommand);
+      var maybeCommand = extension.scripting.buildCommand(rawCommand);
       expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeFindCommand>()));
       var findCommand = maybeCommand as BSharpTreeFindCommand;
       expect(findCommand.value, 90);
@@ -97,18 +97,18 @@ void main() {
 
     test("non existent command", () {
       var rawCommand = RawCommand.literal("im-non-existent");
-      var maybeCommand = extension.buildCommand(rawCommand);
+      var maybeCommand = extension.scripting.buildCommand(rawCommand);
       expect(maybeCommand, isNull);
     });
 
     test("render a BSharpTree Model", () {
       when(() => treeModelMock.currentTree).thenReturn(BSharpTree<num>(3));
-      var maybeWidget = extension.render(treeModelMock, buildContextMock);
-      expect(maybeWidget, allOf(isNotNull, isA<TreeWidget>()));
+      var maybeWidget = extension.renderer.renderAll(treeModelMock, buildContextMock);
+      expect(maybeWidget.elementAt(0), allOf(isNotNull, isA<TreeWidget>()));
     });
 
     test("render another Model", () {
-      expect(extension.render(anotherModelMock, buildContextMock), isNull);
+      expect(extension.renderer.renderAll(anotherModelMock, buildContextMock), isEmpty);
     });
   });
 }

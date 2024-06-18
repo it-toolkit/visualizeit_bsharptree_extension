@@ -28,30 +28,50 @@ class _TreeWidgetState extends State<TreeWidget> {
   @override
   void initState() {
     super.initState();
-    _components = createWidgetsFromTree();
   }
 
-  Map<int, List<Widget>> createWidgetsFromTree() {
-    return widget.tree.getAllNodesByLevel().map((level, listOfNodes) =>
-        MapEntry(
+  Map<int, List<Widget>> createWidgetsFromTree(double screenWidth) {
+    return widget.tree
+        .getAllNodesByLevel()
+        .map((level, listOfNodes) => MapEntry(
             level,
-            listOfNodes
-                .map((node) => createNodeWithTransition(node))
-                .toList()));
+            listOfNodes.map((node) {
+              var widthOfLevel =
+                  listOfNodes.length * widget.tree.maxCapacity * 60;
+
+              double? scaleFactor = widthOfLevel > screenWidth
+                  ? (screenWidth / widthOfLevel)
+                  : null;
+
+              return createNodeWithTransition(node, scaleFactor);
+            }).toList()));
   }
 
-  TreeNodeWidget createNodeWithTransition(BSharpNode<Comparable> node) {
+  TreeNodeWidget createNodeWithTransition(
+      BSharpNode<Comparable> node, double? scaleFactor) {
     var nodeTransition = widget.currentTransition != null &&
             widget.currentTransition!.isATarget(node.id)
         ? widget.currentTransition
         : null;
-
-    return TreeNodeWidget(node, nodeTransition);
+    if (scaleFactor != null) {
+      return TreeNodeWidget(
+        node,
+        nodeTransition,
+        scaleFactor: scaleFactor,
+      );
+    } else {
+      return TreeNodeWidget(
+        node,
+        nodeTransition,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    _components = createWidgetsFromTree();
+    double screenHeight = MediaQuery.of(context).size.height - 125.0;
+    double screenWidth = MediaQuery.of(context).size.width;
+    _components = createWidgetsFromTree(screenWidth);
 
     final List<Widget> rows = [
       Row(
@@ -107,12 +127,40 @@ class _TreeWidgetState extends State<TreeWidget> {
       )
     ];
 
+    List<Widget> treeNodeRows = [const Spacer()];
     for (var mapEntry in _components!.entries) {
-      List<Widget> children = mapEntry.value.fold([
+      List<Widget> children = mapEntry.value.fold(
+          [],
+          (previousValue, widget) =>
+              previousValue +
+              ([
+                widget,
+              ]));
+      treeNodeRows.addAll([
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: children,
+        ),
         const Spacer()
-      ], (previousValue, widget) => previousValue + ([widget, const Spacer()]));
-      rows.addAll([Row(children: children), const Spacer()]);
+      ]);
     }
+
+    rows.add(Expanded(
+        child: InteractiveViewer(
+            alignment: Alignment.center,
+            boundaryMargin: const EdgeInsets.all(double.infinity),
+            clipBehavior: Clip.antiAlias,
+            minScale: 0.01,
+            maxScale: 4.0,
+            constrained: false,
+            child: SizedBox(
+              height: screenHeight,
+              width: screenWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: treeNodeRows,
+              ),
+            ))));
 
     rows.add(Row(
       mainAxisAlignment: MainAxisAlignment.end,

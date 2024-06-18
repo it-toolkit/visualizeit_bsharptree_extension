@@ -10,7 +10,7 @@ void main() {
   BSharpTree<num> tree = BSharpTree<num>(3);
   Random random = Random();
   Set<int> setOfInts = {};
-  while (setOfInts.length < 5) {
+  while (setOfInts.length < 30) {
     setOfInts.add(random.nextInt(1000));
   }
 
@@ -26,6 +26,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       title: 'Visualize IT',
       theme: ThemeData(
@@ -33,11 +34,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: Scaffold(
-        body: InteractiveViewer(
-          clipBehavior: Clip.none,
-          child: TreeWidget(tree, NodeFound(targetId: "2"),
+        body: TreeWidget(tree, NodeFound(targetId: "9"),
               BSharpTreeFindCommand(12, "modelName")),
-        ),
+        //),
       ),
     );
   }

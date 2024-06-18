@@ -11,8 +11,9 @@ import 'package:widget_arrows/widget_arrows.dart';
 class TreeNodeWidget extends StatelessWidget {
   final BSharpNode node;
   final BSharpTreeTransition? transition;
+  final double scaleFactor;
 
-  const TreeNodeWidget(this.node, this.transition, {super.key});
+  const TreeNodeWidget(this.node, this.transition, {this.scaleFactor = 1.0, super.key});
 
   List<Component> buildComponents() {
     final valueNodes = <Widget>[];
@@ -77,8 +78,8 @@ class TreeNodeWidget extends StatelessWidget {
         "node-$nodeId",
         Alignment.topCenter,
         SizedBox(
-          width: 30,
-          height: 20,
+          width: 30 * scaleFactor,
+          height: 20 * scaleFactor,
           child: FittedBox(
               fit: BoxFit.fitHeight,
               alignment: Alignment.bottomCenter,
@@ -110,11 +111,11 @@ class TreeNodeWidget extends StatelessWidget {
     return ArrowElement(
         id: node.id,
         child: Container(
-            width: max(80, 30 + node.length() * 50),
-            height: 65,
+            width: max(80, 30 + node.length() * 50) * scaleFactor,
+            height: 65 * scaleFactor,
             decoration: BoxDecoration(
                 border: Border.all(
-                    width: boxBorderWidth,
+                    width: boxBorderWidth * scaleFactor,
                     color: boxBorderColor,
                     strokeAlign: BorderSide.strokeAlignOutside),
                 color: Colors.white,
@@ -134,7 +135,7 @@ class TreeNodeWidget extends StatelessWidget {
       Color textColor = transition!.getTextColorForWidget();
       widgets.add(Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
+        crossAxisAlignment: CrossAxisAlignment.start,
         textBaseline: TextBaseline.alphabetic,
         children: [
           Container(
@@ -144,8 +145,8 @@ class TreeNodeWidget extends StatelessWidget {
             alignment: Alignment.bottomRight,
             padding: const EdgeInsets.fromLTRB(0.0, 1.0, 3.5, 1.0),
             child: SizedBox(
-              width: 30.0 + text.length.toDouble() * 1.5,
-              height: 18,
+              width: 30.0 + text.length.toDouble() * 1.5 * scaleFactor,
+              height: 18 * scaleFactor,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.bottomRight,
@@ -167,16 +168,16 @@ class TreeNodeWidget extends StatelessWidget {
     return widgets;
   }
 
-  static Widget _boxContainer(String text, Color color,
+  Widget _boxContainer(String text, Color color,
       {double margin = 0.0,
       double width = 35.0,
       double height = 40.0,
       double padding = 5.0}) {
     return Container(
-      width: width,
-      height: height,
-      margin: EdgeInsets.all(margin),
-      padding: EdgeInsets.all(padding),
+      width: width * scaleFactor,
+      height: height * scaleFactor,
+      margin: EdgeInsets.all(margin * scaleFactor),
+      padding: EdgeInsets.all(padding * scaleFactor),
       decoration: BoxDecoration(
         border: Border.all(),
         color: color,

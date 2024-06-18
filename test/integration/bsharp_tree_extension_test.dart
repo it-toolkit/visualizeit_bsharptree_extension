@@ -26,21 +26,21 @@ void main() {
   testWidgets("test tree creation", (tester) async {
     var extension = await extensionBuilder.build();
 
-    ScriptingExtension scriptingExtension = extension.scripting;
-    VisualizerExtension visualizerExtension = extension.visualizer;
+    Scripting scriptingExtension = extension.scripting;
+    Renderer visualizerExtension = extension.renderer;
 
     BSharpTreeBuilderCommand? createCommand = scriptingExtension
         .buildCommand(createRawCommand) as BSharpTreeBuilderCommand?;
 
     BSharpTreeModel? model = createCommand!.call(CommandContext());
-    var treeWidget = visualizerExtension.render(model, buildContextMock);
+    var treeWidget = visualizerExtension.renderAll(model, buildContextMock);
 
     // Check the widget after the model creation
     await tester.pumpWidget(MaterialApp(
         home: Scaffold(
       body: InteractiveViewer(
         clipBehavior: Clip.none,
-        child: treeWidget!,
+        child: treeWidget.elementAt(0),
       ),
     )));
     expect(find.text('3'), findsOneWidget);
@@ -51,8 +51,8 @@ void main() {
   testWidgets("test tree insertion", (tester) async {
     var extension = await extensionBuilder.build();
 
-    ScriptingExtension scriptingExtension = extension.scripting;
-    VisualizerExtension visualizerExtension = extension.visualizer;
+    Scripting scriptingExtension = extension.scripting;
+    Renderer visualizerExtension = extension.renderer;
 
     BSharpTreeBuilderCommand? createCommand = scriptingExtension
         .buildCommand(createRawCommand) as BSharpTreeBuilderCommand?;
@@ -64,12 +64,12 @@ void main() {
     model = result.model as BSharpTreeModel?;
 
     // Check the widget
-    var treeWidget = visualizerExtension.render(model!, buildContextMock);
+    var treeWidget = visualizerExtension.renderAll(model!, buildContextMock);
     await tester.pumpWidget(MaterialApp(
         home: Scaffold(
       body: InteractiveViewer(
         clipBehavior: Clip.none,
-        child: treeWidget!,
+        child: treeWidget.elementAt(0),
       ),
     )));
     expect(result.finished, false);
@@ -82,8 +82,8 @@ void main() {
   testWidgets("test tree insertion - second step", (tester) async {
     var extension = await extensionBuilder.build();
 
-    ScriptingExtension scriptingExtension = extension.scripting;
-    VisualizerExtension visualizerExtension = extension.visualizer;
+    Scripting scriptingExtension = extension.scripting;
+    Renderer visualizerExtension = extension.renderer;
 
     BSharpTreeBuilderCommand? createCommand = scriptingExtension
         .buildCommand(createRawCommand) as BSharpTreeBuilderCommand?;
@@ -103,12 +103,12 @@ void main() {
 
     // Check the widget
     var treeWidget =
-        visualizerExtension.render(secondResult.model!, buildContextMock);
+        visualizerExtension.renderAll(secondResult.model!, buildContextMock);
     await tester.pumpWidget(MaterialApp(
         home: Scaffold(
       body: InteractiveViewer(
         clipBehavior: Clip.none,
-        child: treeWidget!,
+        child: treeWidget.elementAt(0),
       ),
     )));
 
