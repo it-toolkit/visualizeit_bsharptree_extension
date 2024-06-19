@@ -88,6 +88,16 @@ class _TreeWidgetState extends State<TreeWidget> {
                   : ""),
             ),
           ),
+          SizedBox(
+            width: 180,
+            height: 20,
+            child: FittedBox(
+              fit: BoxFit.fitHeight,
+              alignment: Alignment.centerRight,
+              child:
+                  Text("Root node max capacity: ${widget.tree.rootMaxCapacity}"),
+            ),
+          ),
         ],
       ),
       Row(
@@ -103,6 +113,16 @@ class _TreeWidgetState extends State<TreeWidget> {
               child: Text(widget.currentTransition != null
                   ? widget.currentTransition.toString()
                   : ""),
+            ),
+          ),
+          SizedBox(
+            width: 180,
+            height: 20,
+            child: FittedBox(
+              fit: BoxFit.fitHeight,
+              alignment: Alignment.centerRight,
+              child:
+                  Text("Other node max capacity: ${widget.tree.maxCapacity}"),
             ),
           ),
         ],
@@ -146,13 +166,13 @@ class _TreeWidgetState extends State<TreeWidget> {
 
     rows.add(Expanded(
         child: Padding(
-          padding: const EdgeInsets.only(top: 5.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: treeNodeRows,
-          ),
-        )));
+      padding: const EdgeInsets.only(top: 5.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: treeNodeRows,
+      ),
+    )));
 
     rows.add(Row(
       mainAxisAlignment: MainAxisAlignment.end,

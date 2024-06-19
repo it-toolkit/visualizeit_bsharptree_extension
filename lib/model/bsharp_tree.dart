@@ -36,7 +36,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       this.keysAreAutoincremental,
       this.lastKeyAddedToTree);
 
-  int get _rootMaxCapacity => (4 * maxCapacity) ~/ 3;
+  int get rootMaxCapacity => (4 * maxCapacity) ~/ 3;
   int get depth => _rootNode?.level ?? 0;
 
   bool isRoot(BSharpNode<T> node) => node.id == _rootNode?.id;
@@ -976,7 +976,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       {bool isReplacingRoot = false}) {
     return _buildIndexNode(leftNode, rightNodes, level,
         givenNodeId: "0-1",
-        givenCapacity: _rootMaxCapacity,
+        givenCapacity: rootMaxCapacity,
         isReplacingRoot: isReplacingRoot);
   }
 
@@ -1008,7 +1008,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   BSharpSequentialNode<T> _buildRootSequentialNode(List<T> values,
       {bool isReplacingRoot = false}) {
     return _buildSequentialNode(values,
-        givenCapacity: _rootMaxCapacity,
+        givenCapacity: rootMaxCapacity,
         givenNodeId: "0-1",
         isReplacingRoot: isReplacingRoot);
   }
