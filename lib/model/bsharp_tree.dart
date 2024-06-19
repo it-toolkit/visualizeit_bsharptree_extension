@@ -212,28 +212,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
             NodeWritten(targetId: node.id, transitionTree: this.clone()));
 
         if (!isRoot(node) && node.isUnderflowed()) {
-          var isTheLastBranch = node.getParent()!.rightSibling == null;
-          if (keysAreAutoincremental && isTheLastBranch) {
-            if (node.values.isEmpty) {
-              var parentNode = node.getParent()!;
-              var indexRecordToUpdate = parentNode.findIndexRecordById(node.id);
-              _release(node);
-              notifyObservers(
-                  NodeRelease(targetId: node.id, transitionTree: this.clone()));
-              return indexRecordToUpdate;
-            }
-          } else {
-            notifyObservers(
-                NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
-            var hasBalancedWithSibling =
-                _tryToBalanceUnderflowedSequentialNodeWithSiblings(node);
-
-            if (!hasBalancedWithSibling) {
-              // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
-              // ambos nodos
-              return _fuseSequentialNodeWithAnySibling(node);
-            }
-          }
+          return _balanceSequentialNodeUnderFlow(node);
         }
       } else {
         throw ElementNotFoundException("Element $value not found in the tree");
@@ -251,24 +230,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         if (node.parent != null && node.isUnderflowed()) {
           notifyObservers(
               NodeWritten(targetId: node.id, transitionTree: this.clone()));
-          notifyObservers(
-              NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
-
-          var isTheLastBranch = node.rightSibling == null;
-          if (!keysAreAutoincremental || !isTheLastBranch) {
-            var hasBalancedWithSibling =
-                _tryToBalanceUnderflowedIndexNodeWithSiblings(node);
-            if (!hasBalancedWithSibling) {
-              return _fuseIndexNodesWithAnySibling(node);
-            }
-          } else {
-            if (node.leftNode.length() == 0 && node.rightNodes.isEmpty) {
-              var indexRecord = node.getParent()!.findIndexRecordById(node.id);
-              _release(node);
-              return indexRecord;
-            }
-            node.fixFamilyRelations();
-          }
+          return _balanceIndexNodeUnderflow(node);
         } else {
           if (node.parent == null && node.length() == 0) {
             BSharpNode<T> leftChild = node.leftNode;
@@ -1114,6 +1076,54 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       }
     }
     return indexRecord;
+  }
+
+  IndexRecord<T>? _balanceSequentialNodeUnderFlow(
+      BSharpSequentialNode<T> node) {
+    var isTheLastBranch = node.getParent()!.rightSibling == null;
+    IndexRecord<T>? indexRecordToUpdate;
+    if (keysAreAutoincremental && isTheLastBranch) {
+      if (node.values.isEmpty) {
+        var parentNode = node.getParent()!;
+        indexRecordToUpdate = parentNode.findIndexRecordById(node.id);
+        _release(node);
+        notifyObservers(
+            NodeRelease(targetId: node.id, transitionTree: this.clone()));
+      }
+    } else {
+      notifyObservers(
+          NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
+      var hasBalancedWithSibling =
+          _tryToBalanceUnderflowedSequentialNodeWithSiblings(node);
+
+      if (!hasBalancedWithSibling) {
+        // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
+        // ambos nodos
+        indexRecordToUpdate = _fuseSequentialNodeWithAnySibling(node);
+      }
+    }
+    return indexRecordToUpdate;
+  }
+
+  IndexRecord<T>? _balanceIndexNodeUnderflow(BSharpIndexNode<T> node) {
+    IndexRecord<T>? indexRecordToUpdate;
+    var isTheLastBranch = node.rightSibling == null;
+    if (!keysAreAutoincremental || !isTheLastBranch) {
+      notifyObservers(
+          NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
+      var hasBalancedWithSibling =
+          _tryToBalanceUnderflowedIndexNodeWithSiblings(node);
+      if (!hasBalancedWithSibling) {
+        indexRecordToUpdate = _fuseIndexNodesWithAnySibling(node);
+      }
+    } else {
+      if (node.leftNode.length() == 0 && node.rightNodes.isEmpty) {
+        indexRecordToUpdate = node.getParent()!.findIndexRecordById(node.id);
+        _release(node);
+      }
+      node.fixFamilyRelations();
+    }
+    return indexRecordToUpdate;
   }
 }
 
