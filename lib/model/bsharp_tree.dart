@@ -7,6 +7,8 @@ import 'package:visualizeit_bsharptree_extension/model/bsharp_sequential_node.da
 import 'package:visualizeit_bsharptree_extension/model/observable.dart';
 import 'package:visualizeit_extensions/logging.dart';
 
+final logger = Logger("extension.bsharptree.model");
+
 class BSharpTree<T extends Comparable<T>> extends Observable {
   BSharpNode<T>? _rootNode;
   final int maxCapacity;
@@ -17,8 +19,6 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
   //var balanceHandlerStrategyProvider = BalanceHandlerStrategyProvider();
   //late BalanceHandler balanceHandler;
-
-  final logger = Logger("extension.bsharptree.model");
 
   List<String> freeNodesIds = [];
 
@@ -266,7 +266,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     return null;
   }
 
-  String find(T value) {
+  /*String find(T value) {
     var modifier = NodeSearcher<String, T>(getNodeId);
     if (_rootNode != null) {
       _searchTreeAndApplyFunctionToNode(_rootNode!, value, modifier);
@@ -286,12 +286,116 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       var nextNodeForRecursion = indexNode.findNextNodeForKey(value);
       _searchTreeAndApplyFunctionToNode(nextNodeForRecursion, value, modifier);
     }
+  }*/
+  IndexRecord? _searchTreeAndModify(
+      BSharpNode<T> current, T value, NodeManager modifier) {
+    notifyObservers(NodeRead(targetId: current.id));
+    //Base case of the recursion
+    if (current.isLevelZero) {
+      var sequentialNode = current as BSharpSequentialNode<T>;
+      return modifier.applyFunctionToSequentialNode(sequentialNode);
+    } else {
+      var indexNode = current as BSharpIndexNode<T>;
+      var nextNodeForRecursion = indexNode.findNextNodeForKey(value);
+      var result = _searchTreeAndModify(nextNodeForRecursion, value, modifier);
+      if (result != null) {
+        return modifier.applyFunctionToIndexNode(indexNode, result);
+      }
+    }
+    return null;
+  }
+
+  String find(T value) {
+    var modifier = NodeValueFinder<T>(value, getNodeId);
+    if (_rootNode != null) {
+      _searchTreeAndModify(_rootNode!, value, modifier);
+    }
+    return modifier.result!;
   }
 
   String getNodeId(BSharpNode node) {
     notifyObservers(NodeFound(targetId: node.id));
     return node.id;
   }
+
+  void newInsert(T value) {
+    if (_rootNode == null) {
+      _rootNode = _buildRootSequentialNode([value]);
+      nodesQuantity = 2;
+      lastNodeId = 1;
+      notifyObservers(
+          NodeWritten(targetId: _rootNode!.id, transitionTree: this));
+    } else {
+      var modifier = NodeValueInserter<T>(
+          value,
+          addValueToSequentialNode,
+          (node, indexRecord) => node.addIndexRecordToNode(indexRecord),
+          isRoot,
+          _manageOverflowOnRootSequentialNode,
+          _manageOverflowOnSequentialNode,
+          _manageOverflowOnRootIndexNode,
+          _managOverflowOnIndexNode);
+      _searchTreeAndModify(_rootNode!, value, modifier);
+    }
+  }
+
+  void addValueToSequentialNode(BSharpSequentialNode<T> node, T value) {
+    node.addToNode(value);
+    notifyObservers(
+        NodeWritten(targetId: _rootNode!.id, transitionTree: this.clone()));
+  }
+
+  void addIndexRecordToNode(
+      BSharpIndexNode<T> node, IndexRecord<T> indexRecord) {
+    logger.debug(() =>
+        "insertando key promocionada: ${indexRecord.key} en nodo ${node.id}");
+    node.addIndexRecordToNode(indexRecord);
+    node.fixFamilyRelations();
+    notifyObservers(
+        NodeWritten(targetId: node.id, transitionTree: this.clone()));
+  }
+
+  IndexRecord<T>? _manageOverflowOnRootSequentialNode(
+      BSharpSequentialNode<T> node) {
+    notifyObservers(
+        NodeOverflow(targetId: node.id, transitionTree: this.clone()));
+    BSharpSequentialNode<T> leftNode;
+    BSharpSequentialNode<T> rightNode;
+
+    (leftNode, rightNode) = _splitRootNodesInTwo(node);
+
+    leftNode.nextNode = rightNode;
+    //Crear el nuevo nodo indice raiz que va a reemplazar al nodo secuencia
+    var newRoot = _buildRootIndexNode(
+        leftNode, [IndexRecord(rightNode.values.first, rightNode)], 1,
+        isReplacingRoot: true);
+
+    newRoot.fixFamilyRelations();
+    _rootNode = newRoot;
+    notifyObservers(NodeWritten(targetId: leftNode.id, transitionTree: this));
+    notifyObservers(NodeWritten(targetId: rightNode.id));
+    notifyObservers(NodeWritten(targetId: newRoot.id, transitionTree: this));
+    return null;
+  }
+
+  IndexRecord<T>? _manageOverflowOnSequentialNode(
+      BSharpSequentialNode<T> node) {
+    notifyObservers(
+        NodeOverflow(targetId: node.id, transitionTree: this.clone()));
+    IndexRecord<T>? indexRecord;
+    var hasBalancedWithSibling = _tryToBalanceSequentialNodesWithSibling(node);
+
+    if (!hasBalancedWithSibling) {
+      // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
+      // ambos nodos, crear uno nuevo en el medio y repartir las claves en 3
+      indexRecord = _splitSequentialNodeWithAnySibling(node);
+    }
+    return indexRecord;
+  }
+
+  IndexRecord<T>? _manageOverflowOnRootIndexNode(BSharpIndexNode<T> node) {}
+
+  IndexRecord<T>? _managOverflowOnIndexNode(BSharpIndexNode<T> node) {}
 
   /// Splits the root [node] (when it's an index node)
   ///
@@ -1127,7 +1231,157 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   }
 }
 
-abstract class NodeModifier<S, T extends Comparable<T>> {
+abstract class NodeManager<T extends Comparable<T>> {
+  final T value;
+  final Function functionToApplyToSequentialNode;
+  final Function? functionToApplyToIndexNode;
+
+  NodeManager(this.value, this.functionToApplyToSequentialNode,
+      [this.functionToApplyToIndexNode]);
+  IndexRecord? applyFunctionToSequentialNode(BSharpSequentialNode<T> node);
+  IndexRecord? applyFunctionToIndexNode(
+      BSharpIndexNode<T> node, IndexRecord recordToUpdate) {
+    IndexRecord? result;
+    if (functionToApplyToIndexNode != null) {
+      functionToApplyToIndexNode!(node, recordToUpdate);
+    }
+
+    return result;
+  }
+}
+
+abstract class NodeModifier<T extends Comparable<T>> extends NodeManager<T> {
+  final bool Function(BSharpNode<T>) isRoot;
+  final IndexRecord<T>? Function(BSharpSequentialNode<T> node)
+      manageUnbalanceOnSequentialRootNode;
+  final IndexRecord<T>? Function(BSharpSequentialNode<T> node)
+      manageUnbalanceOnSequentialNode;
+  final IndexRecord<T>? Function(BSharpIndexNode<T> node)
+      manageUnbalanceOnIndexRootNode;
+  final IndexRecord<T>? Function(BSharpIndexNode<T> node)
+      manageUnbalanceOnIndexNode;
+
+  NodeModifier(
+      super.value,
+      super.functionToApplyToSequentialNode,
+      super.functionToApplyToIndexNode,
+      this.isRoot,
+      this.manageUnbalanceOnSequentialRootNode,
+      this.manageUnbalanceOnSequentialNode,
+      this.manageUnbalanceOnIndexRootNode,
+      this.manageUnbalanceOnIndexNode);
+
+  @override
+  IndexRecord<T>? applyFunctionToSequentialNode(BSharpSequentialNode<T> node) {
+    manageValueFoundInNode(node);
+    functionToApplyToSequentialNode(node, value);
+    IndexRecord<T>? result;
+    if (isUnbalanced(node)) {
+      if (isRoot(node)) {
+        result = manageUnbalanceOnSequentialRootNode(node);
+      } else {
+        result = manageUnbalanceOnSequentialNode(node);
+      }
+    }
+    return result;
+  }
+
+  @override
+  IndexRecord<T>? applyFunctionToIndexNode(
+      BSharpIndexNode<T> node, IndexRecord recordToUpdate) {
+    IndexRecord<T>? result;
+    if (functionToApplyToIndexNode != null) {
+      functionToApplyToIndexNode!(node, recordToUpdate);
+
+      if (isUnbalanced(node)) {
+        if (isRoot(node)) {
+          result = manageUnbalanceOnIndexRootNode(node);
+        } else {
+          result = manageUnbalanceOnIndexNode(node);
+        }
+      }
+    }
+    return result;
+  }
+
+  void manageValueFoundInNode(BSharpSequentialNode<T> node);
+
+  bool isUnbalanced(BSharpNode<T> node);
+}
+
+class NodeValueInserter<T extends Comparable<T>> extends NodeModifier<T> {
+  NodeValueInserter(
+      super.value,
+      super.functionToApplyToSequentialNode,
+      super.functionToApplyToIndexNode,
+      super.isRoot,
+      super.manageUnbalanceOnSequentialRootNode,
+      super.manageUnbalanceOnSequentialNode,
+      super.manageUnbalanceOnIndexRootNode,
+      super.manageUnbalanceOnIndexNode);
+
+  @override
+  bool isUnbalanced(BSharpNode<T> node) {
+    return node.isOverflowed();
+  }
+
+  @override
+  void manageValueFoundInNode(BSharpSequentialNode<T> node) {
+    if (node.isValueOnNode(value)) {
+      logger
+          .error(() => "el valor $value ya se encuentra en el nodo ${node.id}");
+      throw ElementInsertionException(
+          "cant insert the value $value, it's already on the tree");
+    }
+  }
+}
+
+class NodeValueRemover<T extends Comparable<T>> extends NodeModifier<T> {
+  NodeValueRemover(
+      super.value,
+      super.functionToApplyToSequentialNode,
+      super.functionToApplyToIndexNode,
+      super.isRoot,
+      super.manageUnbalanceOnSequentialRootNode,
+      super.manageUnbalanceOnSequentialNode,
+      super.manageUnbalanceOnIndexRootNode,
+      super.manageUnbalanceOnIndexNode);
+
+  @override
+  bool isUnbalanced(BSharpNode<T> node) {
+    return node.isUnderflowed();
+  }
+
+  @override
+  void manageValueFoundInNode(BSharpSequentialNode<T> node) {
+    if (!node.isValueOnNode(value)) {
+      throw ElementNotFoundException("Element $value not found in the tree");
+    }
+  }
+}
+
+class NodeValueFinder<T extends Comparable<T>> extends NodeManager<T> {
+  String? result;
+
+  NodeValueFinder(super.value, super.functionToApplyToSequentialNode);
+
+  @override
+  IndexRecord<T>? applyFunctionToSequentialNode(BSharpSequentialNode<T> node) {
+    result = functionToApplyToSequentialNode(node);
+    return null;
+  }
+}
+
+/*class NodeInserterRemover<T extends Comparable<T>> extends NodeManager<T>{
+
+  NodeInserterRemover(super.functionToApplyToSequentialNode, super.functionToApplyToIndexNode);
+
+  IndexRecord? manageSequentialNode(BSharpSequentialNode<T> node)
+}*/
+
+
+
+/*abstract class NodeModifier<S, T extends Comparable<T>> {
   bool changedStructure = false;
   S? result;
   Function functionToApply;
@@ -1148,7 +1402,7 @@ class NodeSearcher<S, T extends Comparable<T>> extends NodeModifier<S, T> {
   void applyFunctionToNode(BSharpNode<T> node) {
     result = functionToApply(node);
   }
-}
+}*/
 
 /*class BalanceHandlerStrategyProvider {
   var _autoincrementalKeysBalanceHandler = AutoincrementalKeysBalanceHandler();
