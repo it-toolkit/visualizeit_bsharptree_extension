@@ -15,17 +15,11 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   bool keysAreAutoincremental = false;
   T? lastKeyAddedToTree;
 
-  //var balanceHandlerStrategyProvider = BalanceHandlerStrategyProvider();
-  //late BalanceHandler balanceHandler;
-
   final logger = Logger("extension.bsharptree.model");
 
   List<String> freeNodesIds = [];
 
-  BSharpTree(this.maxCapacity, {this.keysAreAutoincremental = false}) {
-    /*balanceHandler =
-        balanceHandlerStrategyProvider.getBalanceHandler(isAutoIncrementedTree);*/
-  }
+  BSharpTree(this.maxCapacity, {this.keysAreAutoincremental = false});
 
   BSharpTree._copy(
       this._rootNode,
@@ -625,7 +619,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
     leftSiblingNode.values = allKeys.sublist(0, allKeys.length ~/ 2);
     rightSiblingNode.values = allKeys.sublist(allKeys.length ~/ 2);
-    leftSiblingNode.nextNode = rightSiblingNode; //TODO chequear los nextNode
+    leftSiblingNode.nextNode = rightSiblingNode;
 
     if (leftSiblingRecord != null) {
       leftSiblingRecord.key = leftSiblingNode.firstKey()!;
