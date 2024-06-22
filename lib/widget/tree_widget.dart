@@ -69,112 +69,59 @@ class _TreeWidgetState extends State<TreeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    _components = createWidgetsFromTree(screenWidth);
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        double screenWidth = constraints.maxWidth;
+        _components = createWidgetsFromTree(screenWidth);
 
-    final List<Widget> rows = [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 180,
-            height: 20,
-            child: FittedBox(
-              fit: BoxFit.fitHeight,
-              alignment: Alignment.centerLeft,
-              child: Text(widget.commandInExecution != null
-                  ? widget.commandInExecution.toString()
-                  : ""),
-            ),
-          ),
-          SizedBox(
-            width: 180,
-            height: 20,
-            child: FittedBox(
-              fit: BoxFit.fitHeight,
-              alignment: Alignment.centerRight,
-              child:
-                  Text("Root node max capacity: ${widget.tree.rootMaxCapacity}"),
-            ),
-          ),
-        ],
-      ),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 180,
-            height: 20,
-            child: FittedBox(
-              fit: BoxFit.contain,
-              alignment: Alignment.centerLeft,
-              child: Text(widget.currentTransition != null
-                  ? widget.currentTransition.toString()
-                  : ""),
-            ),
-          ),
-          SizedBox(
-            width: 180,
-            height: 20,
-            child: FittedBox(
-              fit: BoxFit.fitHeight,
-              alignment: Alignment.centerRight,
-              child:
-                  Text("Other node max capacity: ${widget.tree.maxCapacity}"),
-            ),
-          ),
-        ],
-      ),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 120,
-            height: 20,
-            child: FittedBox(
-              fit: BoxFit.contain,
-              alignment: Alignment.centerLeft,
-              child: Text(widget.tree.freeNodesIds.isNotEmpty
-                  ? "Free nodes: ${widget.tree.freeNodesIds}"
-                  : ""),
-            ),
-          ),
-        ],
-      )
-    ];
+        final List<Widget> rows = [
+          buildCommandInExecutionRow(),
+          buildCurrentTransitionRow(),
+          buildFreeNodesRow()
+        ];
 
-    List<Widget> treeNodeRows = [];
-    for (var mapEntry in _components!.entries) {
-      List<Widget> children = mapEntry.value.fold(
-          [],
-          (previousValue, widget) =>
-              previousValue +
-              ([
-                widget,
-              ]));
-      treeNodeRows.addAll([
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: children,
-        ),
-        const Spacer(),
-      ]);
-    }
+        List<Widget> treeNodeRows = [];
+        for (var mapEntry in _components!.entries) {
+          List<Widget> children = mapEntry.value.fold(
+              [],
+              (previousValue, widget) =>
+                  previousValue +
+                  ([
+                    widget,
+                  ]));
+          treeNodeRows.addAll([
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: children,
+            ),
+            const Spacer(),
+          ]);
+        }
 
-    rows.add(Expanded(
-        child: Padding(
-      padding: const EdgeInsets.only(top: 5.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: treeNodeRows,
-      ),
-    )));
+        rows.add(Expanded(
+            child: Padding(
+          padding: const EdgeInsets.only(top: 5.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: treeNodeRows,
+          ),
+        )));
 
-    rows.add(Row(
+        rows.add(buildColorReferenceBox());
+
+        return ArrowContainer(
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: rows),
+        );
+      },
+    );
+  }
+
+  Row buildColorReferenceBox() {
+    return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -198,13 +145,85 @@ class _TreeWidgetState extends State<TreeWidget> {
           ),
         ),
       ],
-    ));
+    );
+  }
 
-    return ArrowContainer(
-      child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: rows),
+  Row buildFreeNodesRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 120,
+          height: 20,
+          child: FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.centerLeft,
+            child: Text(widget.tree.freeNodesIds.isNotEmpty
+                ? "Free nodes: ${widget.tree.freeNodesIds}"
+                : ""),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Row buildCurrentTransitionRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 180,
+          height: 20,
+          child: FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.centerLeft,
+            child: Text(widget.currentTransition != null
+                ? widget.currentTransition.toString()
+                : ""),
+          ),
+        ),
+        SizedBox(
+          width: 180,
+          height: 20,
+          child: FittedBox(
+            fit: BoxFit.fitHeight,
+            alignment: Alignment.centerRight,
+            child: Text("Other node max capacity: ${widget.tree.maxCapacity}"),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Row buildCommandInExecutionRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 180,
+          height: 20,
+          child: FittedBox(
+            fit: BoxFit.fitHeight,
+            alignment: Alignment.centerLeft,
+            child: Text(widget.commandInExecution != null
+                ? widget.commandInExecution.toString()
+                : ""),
+          ),
+        ),
+        SizedBox(
+          width: 180,
+          height: 20,
+          child: FittedBox(
+            fit: BoxFit.fitHeight,
+            alignment: Alignment.centerRight,
+            child:
+                Text("Root node max capacity: ${widget.tree.rootMaxCapacity}"),
+          ),
+        ),
+      ],
     );
   }
 

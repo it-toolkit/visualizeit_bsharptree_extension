@@ -13,7 +13,7 @@ class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T> {
   }
 
   BSharpSequentialNode.createNode(
-      super.id, super.level, super.maxCapacity, this.values);
+      super.id, super.level, super.maxCapacity, this.values, [this.nextNode]);
 
   void addToNode(T value) {
     values.add(value);
@@ -54,6 +54,6 @@ class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T> {
 
   BSharpSequentialNode<T> copy() {
     return BSharpSequentialNode.createNode(
-        id, level, maxCapacity, List.of(values));
+        id, level, maxCapacity, List.of(values), nextNode);
   }
 }
