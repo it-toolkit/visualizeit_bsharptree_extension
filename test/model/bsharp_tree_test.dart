@@ -697,7 +697,6 @@ void main() {
       for (var i = 1; i < 31; i++) {
         tree.insert(i);
       }
-      //tree.remove(25);
 
       tree.remove(30);
       tree.remove(29);

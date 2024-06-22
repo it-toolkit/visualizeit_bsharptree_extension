@@ -118,25 +118,34 @@ class TreeNodeWidget extends StatelessWidget {
         ? transition!.getBoxBorderColorForWidget()
         : Colors.black;
     var scaledBorderRadius = 10 * scaleFactor;
-    return ArrowElement(
-        id: node.id,
-        child: Container(
-            width: max(80, 30 + node.length() * 50) * scaleFactor,
-            height: 65 * scaleFactor,
-            decoration: BoxDecoration(
-                border: Border.all(
-                    width: boxBorderWidth * scaleFactor,
-                    color: boxBorderColor,
-                    strokeAlign: BorderSide.strokeAlignOutside),
-                color: Colors.white,
-                borderRadius:
-                    BorderRadius.all(Radius.circular(scaledBorderRadius)),
-                boxShadow: const [
-                  BoxShadow(blurRadius: 5),
-                ]),
-            child: Column(
-              children: buildComponentsContainers(components),
-            )));
+    Widget nodeBox = Container(
+        width: max(80, 30 + node.length() * 50) * scaleFactor,
+        height: 65 * scaleFactor,
+        decoration: BoxDecoration(
+            border: Border.all(
+                width: boxBorderWidth * scaleFactor,
+                color: boxBorderColor,
+                strokeAlign: BorderSide.strokeAlignOutside),
+            color: Colors.white,
+            borderRadius: BorderRadius.all(Radius.circular(scaledBorderRadius)),
+            boxShadow: const [
+              BoxShadow(blurRadius: 5),
+            ]),
+        child: Column(
+          children: buildComponentsContainers(components),
+        ));
+    if (node is BSharpSequentialNode) {
+      var sequentialNode = node as BSharpSequentialNode;
+      if (sequentialNode.nextNode != null) {
+        nodeBox = nodeBox.link(
+            "${sequentialNode.id}-${sequentialNode.nextNode!.id}",
+            Alignment.centerRight,
+            sequentialNode.nextNode!.id,
+            Alignment.centerLeft,
+            straight: true);
+      }
+    }
+    return ArrowElement(id: node.id, child: nodeBox);
   }
 
   List<Widget> buildComponentsContainers(List<Component> components) {
