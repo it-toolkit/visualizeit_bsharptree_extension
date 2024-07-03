@@ -80,7 +80,7 @@ mixin NodeBalancingView implements TransitionView {
   Color getTextColorForWidget() => Colors.blue;
 
   @override
-  String getTextForWidget() => "Underflow";
+  String getTextForWidget() => "Balancing";
 }
 
 mixin NodeSplitView implements TransitionView {

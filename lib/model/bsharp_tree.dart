@@ -37,81 +37,6 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
   bool isRoot(BSharpNode<T> node) => node.id == _rootNode?.id;
 
-  /// Inserts a new [value] in the B# tree
-  ///
-  /// [value] must be of a type [T] that implements [Comparable]
-  /// If the tree is empty, creates the root node and then inserts [value]
-  /// If the value is already on the tree, it throws an [ElementInsertionException]
-  ///
-  /// May cause the B# tree to split nodes or grow on height or width
-  /*void insert(T value) {
-    logger.debug(() => "insertando value: $value");
-    if (keysAreAutoincremental) {
-      if (lastKeyAddedToTree != null &&
-          lastKeyAddedToTree!.compareTo(value) > 0) {
-        throw ElementInsertionException(
-            "cant insert the value $value, it's smaller than the last value added to the tree");
-      }
-    }
-    if (_rootNode == null) {
-      _rootNode = _buildRootSequentialNode([value]);
-      nodesQuantity = 2;
-      lastNodeId = 1;
-      notifyObservers(
-          NodeWritten(targetId: _rootNode!.id, transitionTree: this));
-    } else {
-      if (_rootNode!.isLevelZero) {
-        //el unico nodo del arbol es la raiz
-        var node = _rootNode as BSharpSequentialNode<T>;
-        notifyObservers(NodeRead(targetId: node.id));
-        node.addToNode(value);
-        notifyObservers(
-            NodeWritten(targetId: _rootNode!.id, transitionTree: this.clone()));
-        if (node.isOverflowed()) {
-          notifyObservers(
-              NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-          BSharpSequentialNode<T> leftNode;
-          BSharpSequentialNode<T> rightNode;
-
-          (leftNode, rightNode) = _splitRootNodesInTwo(node);
-
-          leftNode.nextNode = rightNode;
-          //Crear el nuevo nodo indice raiz que va a reemplazar al nodo secuencia
-          var newRoot = _buildRootIndexNode(
-              leftNode, [IndexRecord(rightNode.values.first, rightNode)], 1,
-              isReplacingRoot: true);
-
-          newRoot.fixFamilyRelations();
-          _rootNode = newRoot;
-          notifyObservers(
-              NodeWritten(targetId: leftNode.id, transitionTree: this));
-          notifyObservers(NodeWritten(targetId: rightNode.id));
-          notifyObservers(
-              NodeWritten(targetId: newRoot.id, transitionTree: this));
-        }
-      } else {
-        _insertRecursively(_rootNode!, null, value);
-      }
-    }
-
-    logger.debug(() => _printTree());
-    lastKeyAddedToTree = value;
-  }*/
-
-  /// Removes a [value] from the B# tree, if it can be found
-  ///
-  /// [value] must be of a type [T] that implements [Comparable]
-  /// If the value is not found on the tree, it throws an [ElementNotFoundException]
-  ///
-  /// May cause the tree to fuse nodes and shrink in height or width
-  /*void remove(T value) {
-    logger.debug(() => "eliminando value: $value");
-    if (_rootNode != null) {
-      _removeRecursively(_rootNode!, value);
-    }
-    logger.debug(() => _printTree());
-  }*/
-
   Map<int, List<BSharpNode<T>>> getAllNodesByLevel() {
     Map<int, List<BSharpNode<T>>> allNodesMap = {};
     if (_rootNode != null) {
@@ -262,27 +187,6 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     return null;
   }
 
-  /*String find(T value) {
-    var modifier = NodeSearcher<String, T>(getNodeId);
-    if (_rootNode != null) {
-      _searchTreeAndApplyFunctionToNode(_rootNode!, value, modifier);
-    }
-    return modifier.result!;
-  }
-
-  void _searchTreeAndApplyFunctionToNode(
-      BSharpNode<T> current, T value, NodeModifier modifier) {
-    notifyObservers(NodeRead(targetId: current.id));
-    //Base case of the recursion
-    if (current.isLevelZero) {
-      var sequentialNode = current as BSharpSequentialNode<T>;
-      modifier.applyFunctionToNode(sequentialNode);
-    } else {
-      var indexNode = current as BSharpIndexNode<T>;
-      var nextNodeForRecursion = indexNode.findNextNodeForKey(value);
-      _searchTreeAndApplyFunctionToNode(nextNodeForRecursion, value, modifier);
-    }
-  }*/
   IndexRecord? _searchTreeAndModify(
       BSharpNode<T> current, T value, NodeManager<T> modifier) {
     notifyObservers(NodeRead(targetId: current.id));
@@ -298,27 +202,29 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         return modifier.applyFunctionToIndexNode(indexNode, result);
       }
       return _releaseIndexNodeIfEmpty(indexNode);
-      /*else {
-        return releaseIndexNodeIfEmpty(indexNode);
-      }*/
-      //indexNode.fixFamilyRelations();
     }
-    //return null;
   }
 
   String find(T value) {
-    var modifier = NodeValueFinder<T>(value, getNodeId);
+    var modifier = NodeValueFinder<T>(value, _getNodeId);
     if (_rootNode != null) {
       _searchTreeAndModify(_rootNode!, value, modifier);
     }
     return modifier.result!;
   }
 
-  String getNodeId(BSharpNode node) {
+  String _getNodeId(BSharpNode node) {
     notifyObservers(NodeFound(targetId: node.id));
     return node.id;
   }
 
+  /// Inserts a new [value] in the B# tree
+  ///
+  /// [value] must be of a type [T] that implements [Comparable]
+  /// If the tree is empty, creates the root node and then inserts [value]
+  /// If the value is already on the tree, it throws an [ElementInsertionException]
+  ///
+  /// May cause the B# tree to split nodes or grow on height or width
   void insert(T value) {
     logger.debug(() => "insertando value: $value");
     if (keysAreAutoincremental) {
@@ -493,6 +399,12 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     return indexRecord;
   }
 
+  /// Removes a [value] from the B# tree, if it can be found
+  ///
+  /// [value] must be of a type [T] that implements [Comparable]
+  /// If the value is not found on the tree, it throws an [ElementNotFoundException]
+  ///
+  /// May cause the tree to fuse nodes and shrink in height or width
   void remove(T value) {
     logger.debug(() => "eliminando value: $value");
     if (_rootNode != null) {
@@ -1245,7 +1157,9 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
           .map((indexRecord) => IndexRecord(
               indexRecord.key, _cloneRecursively(indexRecord.rightNode)))
           .toList();
-      return indexNode.copyWith(leftNode: leftNode, rightNodes: rightNodes);
+      var indexNodeCopy = indexNode.copyWith(leftNode: leftNode, rightNodes: rightNodes);
+      indexNodeCopy.fixFamilyRelations();
+      return indexNodeCopy;
     } else {
       var sequentialNode = node as BSharpSequentialNode<T>;
       return sequentialNode.copy();
@@ -1259,7 +1173,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
     //Si no me llega un nodeId hay que obtenerlo, reusando uno o creando uno nuevo
     if (givenNodeId == null) {
-      (nodeId, hasReused) = getNextNodeIdWithReuse();
+      (nodeId, hasReused) = _getNextNodeIdWithReuse();
     } else {
       nodeId = givenNodeId;
     }
@@ -1294,7 +1208,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
     //Si no me llega un nodeId hay que obtenerlo, reusando uno o creando uno nuevo
     if (givenNodeId == null) {
-      (nodeId, hasReused) = getNextNodeIdWithReuse();
+      (nodeId, hasReused) = _getNextNodeIdWithReuse();
     } else {
       nodeId = givenNodeId;
     }
@@ -1319,7 +1233,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         isReplacingRoot: isReplacingRoot);
   }
 
-  (String, bool) getNextNodeIdWithReuse() {
+  (String, bool) _getNextNodeIdWithReuse() {
     if (freeNodesIds.isNotEmpty) {
       return (freeNodesIds.removeAt(0), true);
     } else {
@@ -1621,74 +1535,3 @@ class NodeValueFinder<T extends Comparable<T>> extends NodeManager<T> {
     return null;
   }
 }
-
-/*class NodeInserterRemover<T extends Comparable<T>> extends NodeManager<T>{
-
-  NodeInserterRemover(super.functionToApplyToSequentialNode, super.functionToApplyToIndexNode);
-
-  IndexRecord? manageSequentialNode(BSharpSequentialNode<T> node)
-}*/
-
-
-
-/*abstract class NodeModifier<S, T extends Comparable<T>> {
-  bool changedStructure = false;
-  S? result;
-  Function functionToApply;
-
-  NodeModifier(this.functionToApply);
-
-  void applyFunctionToNode(BSharpNode<T> node);
-
-  S? getResult() {
-    return result;
-  }
-}
-
-class NodeSearcher<S, T extends Comparable<T>> extends NodeModifier<S, T> {
-  NodeSearcher(super.functionToApply);
-
-  @override
-  void applyFunctionToNode(BSharpNode<T> node) {
-    result = functionToApply(node);
-  }
-}*/
-
-/*class BalanceHandlerStrategyProvider {
-  var _autoincrementalKeysBalanceHandler = AutoincrementalKeysBalanceHandler();
-  var _unsortedKeysBalanceHandler = UnsortedKeysBalanceHandler();
-
-  BalanceHandlerStrategyProvider();
-
-  BalanceHandler getBalanceHandler(bool keysAreAutoincremental) {
-    if (keysAreAutoincremental) {
-      return _autoincrementalKeysBalanceHandler;
-    } else {
-      return _unsortedKeysBalanceHandler;
-    }
-  }
-}
-
-abstract class BalanceHandler {
-  (BSharpSequentialNode, BSharpSequentialNode) splitRootNodeValuesInTwo(
-      BSharpSequentialNode node, BSharpSequentialNode Function() nodeBuildingFunction);
-  //IndexRecord? balanceSequentialNodeOverflow();
-  //IndexRecord? balanceSequentialNodeUnderflow();
-  //IndexRecord? balanceIndexNodeOverflow();
-  //IndexRecord? balanceIndexNodeUnderflow();
-}
-
-class AutoincrementalKeysBalanceHandler extends BalanceHandler {
-  @override
-  (BSharpSequentialNode<Comparable>, BSharpSequentialNode<Comparable>) splitRootNodeValuesInTwo(BSharpSequentialNode<Comparable> node) {
-    // TODO: implement splitRootNodeValuesInTwo
-    throw UnimplementedError();
-  }
-}
-
-class UnsortedKeysBalanceHandler extends BalanceHandler {
-  @override
-  (BSharpSequentialNode<Comparable>, BSharpSequentialNode<Comparable>) splitRootNodeValuesInTwo(BSharpSequentialNode<Comparable> node) {
-    return (_buildSequentialNode(node.getFirstHalfOfValues()),_buildSequentialNode(node.getLastHalfOfValues());
-  }
-}*/

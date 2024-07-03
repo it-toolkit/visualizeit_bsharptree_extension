@@ -80,7 +80,7 @@ class BSharpTreeModel extends Model {
   @override
   Model clone() {
     return BSharpTreeModel.copyWith(
-        _baseTree,
+        _baseTree.clone(),
         _currentFrame,
         commandInExecution,
         _lastTransitionTree?.clone(),
