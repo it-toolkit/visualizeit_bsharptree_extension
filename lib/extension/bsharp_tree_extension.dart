@@ -10,7 +10,7 @@ import 'package:visualizeit_extensions/logging.dart';
 final _logger = Logger("extension.bsharptree");
 
 final class BSharpTreeExtension extends Extension {
-  static const extensionId = "bsharptree-extension";
+  static const extensionId = "bsharptree";
 
   BSharpTreeExtension._create({required super.markdownDocs, required super.extensionCore}) : super.create(id: extensionId);
 }
