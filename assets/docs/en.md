@@ -10,11 +10,11 @@ Extension id: `bsharptree`
 
 Creates an empty tree with the given maximum capacity. As an optional feature you can pass the values to initialize the tree.
 
-| Name            | Type     | Position | Required | Default value | Description |
-|-----------------|----------|----------|----------|---------------|-------------|
-| maxCapacity     | int      | 0        | true     | -             | -           |
-| initialValues   | intArray | 1        | true     | -             | -           |
-| autoIncremental | boolean  | 2        | false    | false         | -           |
+| Name            | Type     | Position | Required | Default value | Description                 |
+|-----------------|----------|----------|----------|---------------|-----------------------------|
+| maxCapacity     | int      | 0        | true     | -             | Must be in range [ 1 , 30 ] |
+| initialValues   | intArray | 1        | true     | -             | -                           |
+| autoIncremental | boolean  | 2        | false    | false         | -                           |
 
 ### bsharptree-insert
 

@@ -18,12 +18,19 @@ class BSharpTreeBuilderCommand extends ModelBuilderCommand {
   BSharpTreeBuilderCommand(this.maxCapacity, this.initialValues,
       [this.autoIncremental]);
   BSharpTreeBuilderCommand.build(RawCommand rawCommand)
-      : maxCapacity = commandDefinition.getArg(name: "maxCapacity", from: rawCommand),
+      : maxCapacity = _getIntArgInRange(name: "maxCapacity", from: rawCommand, min: 1, max: 30),
         initialValues = (commandDefinition.getArg(name: "initialValues", from: rawCommand) as List<int>),
         autoIncremental = commandDefinition.getArg(name: "autoIncremental", from: rawCommand);
 
   @override
   BSharpTreeModel call(CommandContext context) {
     return BSharpTreeModel("", maxCapacity, initialValues, autoIncremental ?? false); //TODO para que es el name?
+  }
+
+  static int _getIntArgInRange({required String name, required RawCommand from, required int min, required int max}) {
+    int value = commandDefinition.getArg(name: name, from: from);
+    if (value < min || value > max) throw Exception("Value must be in range [ $min , $max ]");
+
+    return value;
   }
 }
