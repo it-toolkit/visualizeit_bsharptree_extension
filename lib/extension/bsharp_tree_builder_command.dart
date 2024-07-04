@@ -20,11 +20,19 @@ class BSharpTreeBuilderCommand extends ModelBuilderCommand {
       [this.autoIncremental]);
   BSharpTreeBuilderCommand.build(RawCommand rawCommand)
       : maxCapacity = commandDefinition.getIntArgInRange(name: "maxCapacity", from: rawCommand, min: 3, max: 10),
-        initialValues = (commandDefinition.getArg(name: "initialValues", from: rawCommand) as List<int>),
+        initialValues = _validate(name: "initialValues", from: rawCommand),
         autoIncremental = commandDefinition.getArg(name: "autoIncremental", from: rawCommand);
 
   @override
   BSharpTreeModel call(CommandContext context) {
     return BSharpTreeModel("", maxCapacity, initialValues, autoIncremental ?? false);
+  }
+  
+  static List<int> _validate({required String name, required RawCommand from}) {
+    List<int> initialValues= commandDefinition.getArg(name: "initialValues", from: from) as List<int>;
+    if(initialValues.any((value) => value < 1 || value > 9999)){
+      throw Exception("values in 'initialValues' must be in range [1, 9999]");
+    }
+    return initialValues;
   }
 }

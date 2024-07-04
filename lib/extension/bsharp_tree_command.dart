@@ -64,7 +64,7 @@ class BSharpTreeInsertCommand extends BSharpTreeCommand {
 
   BSharpTreeInsertCommand.build(RawCommand rawCommand)
       : super(
-            commandDefinition.getIntArgInRange(name: "value", from: rawCommand, min: 1, max: 99999),
+            commandDefinition.getIntArgInRange(name: "value", from: rawCommand, min: 1, max: 9999),
             const Uuid().v4(),
             Logger("extension.bsharptree.insert"),
             "");
@@ -90,7 +90,7 @@ class BSharpTreeRemoveCommand extends BSharpTreeCommand {
 
   BSharpTreeRemoveCommand.build(RawCommand rawCommand)
       : super(
-            commandDefinition.getIntArgInRange(name: "value", from: rawCommand, min: 1, max: 99999),
+            commandDefinition.getIntArgInRange(name: "value", from: rawCommand, min: 1, max: 9999),
             const Uuid().v4(),
             Logger("extension.bsharptree.remove"),
             "");
@@ -115,7 +115,7 @@ class BSharpTreeFindCommand extends BSharpTreeCommand {
 
   BSharpTreeFindCommand.build(RawCommand rawCommand)
       : super(
-            commandDefinition.getIntArgInRange(name: "value", from: rawCommand, min: 1, max: 99999),
+            commandDefinition.getIntArgInRange(name: "value", from: rawCommand, min: 1, max: 9999),
             const Uuid().v4(),
             Logger("extension.bsharptree.find"),
             "");

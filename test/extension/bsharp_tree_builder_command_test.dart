@@ -56,4 +56,28 @@ void main() {
             predicate((e) =>
                 e.toString().contains("'maxCapacity' must be in range")))));
   });
+
+  test("Value in initialValues under min range", () {
+    var rawCommand =
+        RawCommand.withPositionalArgs("bsharptree-create", [3, [4,5,6,0]]);
+
+    expect(
+        () => BSharpTreeBuilderCommand.build(rawCommand),
+        throwsA(allOf(
+            isException,
+            predicate((e) =>
+                e.toString().contains("values in 'initialValues' must be in range")))));
+  });
+
+  test("Value in initialValues over max range", () {
+    var rawCommand =
+        RawCommand.withPositionalArgs("bsharptree-create", [3, [4,10000,5,6]]);
+
+    expect(
+        () => BSharpTreeBuilderCommand.build(rawCommand),
+        throwsA(allOf(
+            isException,
+            predicate((e) =>
+                e.toString().contains("values in 'initialValues' must be in range")))));
+  });
 }

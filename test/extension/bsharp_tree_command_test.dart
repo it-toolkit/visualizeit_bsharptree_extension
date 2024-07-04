@@ -96,7 +96,7 @@ void main() {
 
   test("Insert Value over max range", () {
     var rawCommand =
-        RawCommand.withPositionalArgs("bsharptree-insert", [100000]);
+        RawCommand.withPositionalArgs("bsharptree-insert", [10000]);
 
     expect(
         () => BSharpTreeInsertCommand.build(rawCommand),
@@ -120,7 +120,7 @@ void main() {
 
   test("Remove Value over max range", () {
     var rawCommand =
-        RawCommand.withPositionalArgs("bsharptree-remove", [100000]);
+        RawCommand.withPositionalArgs("bsharptree-remove", [10000]);
 
     expect(
         () => BSharpTreeInsertCommand.build(rawCommand),
@@ -144,7 +144,7 @@ void main() {
 
   test("Find Value over max range", () {
     var rawCommand =
-        RawCommand.withPositionalArgs("bsharptree-find", [100000]);
+        RawCommand.withPositionalArgs("bsharptree-find", [10000]);
 
     expect(
         () => BSharpTreeInsertCommand.build(rawCommand),

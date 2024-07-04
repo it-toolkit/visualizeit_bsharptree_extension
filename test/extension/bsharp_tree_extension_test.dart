@@ -39,7 +39,7 @@ void main() async {
     test("build tree builder command with initial values", () {
       var rawCommand = RawCommand.withNamedArgs("bsharptree-create", {
         "maxCapacity": "3",
-        "initialValues": ["1", "3"]
+        "initialValues": [1, 3]
       });
       var maybeCommand = extension.scripting.buildCommand(rawCommand);
       expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeBuilderCommand>()));
@@ -49,7 +49,7 @@ void main() async {
     });
 
      test("build tree builder command with initial values and autoincremental", () {
-      var rawCommand = RawCommand.withPositionalArgs("bsharptree-create", [3,["1", "3"],true]);
+      var rawCommand = RawCommand.withPositionalArgs("bsharptree-create", [3,[1, 3],true]);
       var maybeCommand = extension.scripting.buildCommand(rawCommand);
       expect(maybeCommand, allOf(isNotNull, isA<BSharpTreeBuilderCommand>()));
       var builderCommand = maybeCommand as BSharpTreeBuilderCommand;
