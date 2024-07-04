@@ -3,6 +3,7 @@ import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_extensions/common.dart';
 import 'package:visualizeit_extensions/logging.dart';
 import 'package:visualizeit_extensions/scripting.dart';
+import 'package:visualizeit_extensions/scripting_extensions.dart';
 
 import 'bsharp_tree_extension.dart';
 import 'bsharp_tree_model.dart';
@@ -63,10 +64,10 @@ class BSharpTreeInsertCommand extends BSharpTreeCommand {
 
   BSharpTreeInsertCommand.build(RawCommand rawCommand)
       : super(
-            commandDefinition.getArg(name: "value", from: rawCommand),
+            commandDefinition.getIntArgInRange(name: "value", from: rawCommand, min: 1, max: 99999),
             const Uuid().v4(),
             Logger("extension.bsharptree.insert"),
-            ""); //TODO entender para que es necesario el modelName acá
+            "");
 
   @override
   String toString() {
@@ -89,10 +90,10 @@ class BSharpTreeRemoveCommand extends BSharpTreeCommand {
 
   BSharpTreeRemoveCommand.build(RawCommand rawCommand)
       : super(
-            commandDefinition.getArg(name: "value", from: rawCommand),
+            commandDefinition.getIntArgInRange(name: "value", from: rawCommand, min: 1, max: 99999),
             const Uuid().v4(),
             Logger("extension.bsharptree.remove"),
-            ""); //TODO entender para que es necesario el modelName acá
+            "");
   @override
   String toString() {
     return "Removing value: $value";
@@ -114,10 +115,10 @@ class BSharpTreeFindCommand extends BSharpTreeCommand {
 
   BSharpTreeFindCommand.build(RawCommand rawCommand)
       : super(
-            commandDefinition.getArg(name: "value", from: rawCommand),
+            commandDefinition.getIntArgInRange(name: "value", from: rawCommand, min: 1, max: 99999),
             const Uuid().v4(),
             Logger("extension.bsharptree.find"),
-            ""); //TODO entender para que es necesario el modelName acá
+            "");
   @override
   String toString() {
     return "Finding value: $value";

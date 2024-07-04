@@ -3,6 +3,7 @@ import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_command.d
 import 'package:visualizeit_bsharptree_extension/extension/bsharp_tree_model.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:visualizeit_extensions/common.dart';
+import 'package:visualizeit_extensions/scripting.dart';
 
 class BSharpTreeModelMock extends Mock implements BSharpTreeModel {}
 
@@ -79,5 +80,77 @@ void main() {
     expect(commandResult.finished, isFalse);
     expect(commandResult.model,
         allOf(isA<BSharpTreeModel>(), equals(resultTreeModelMock)));
+  });
+
+  test("Insert Value under min range", () {
+    var rawCommand =
+        RawCommand.withPositionalArgs("bsharptree-insert", [0]);
+
+    expect(
+        () => BSharpTreeInsertCommand.build(rawCommand),
+        throwsA(allOf(
+            isException,
+            predicate((e) =>
+                e.toString().contains("'value' must be in range")))));
+  });
+
+  test("Insert Value over max range", () {
+    var rawCommand =
+        RawCommand.withPositionalArgs("bsharptree-insert", [100000]);
+
+    expect(
+        () => BSharpTreeInsertCommand.build(rawCommand),
+        throwsA(allOf(
+            isException,
+            predicate((e) =>
+                e.toString().contains("'value' must be in range")))));
+  });
+
+  test("Remove Value under min range", () {
+    var rawCommand =
+        RawCommand.withPositionalArgs("bsharptree-remove", [0]);
+
+    expect(
+        () => BSharpTreeInsertCommand.build(rawCommand),
+        throwsA(allOf(
+            isException,
+            predicate((e) =>
+                e.toString().contains("'value' must be in range")))));
+  });
+
+  test("Remove Value over max range", () {
+    var rawCommand =
+        RawCommand.withPositionalArgs("bsharptree-remove", [100000]);
+
+    expect(
+        () => BSharpTreeInsertCommand.build(rawCommand),
+        throwsA(allOf(
+            isException,
+            predicate((e) =>
+                e.toString().contains("'value' must be in range")))));
+  });
+
+  test("Find Value under min range", () {
+    var rawCommand =
+        RawCommand.withPositionalArgs("bsharptree-find", [0]);
+
+    expect(
+        () => BSharpTreeInsertCommand.build(rawCommand),
+        throwsA(allOf(
+            isException,
+            predicate((e) =>
+                e.toString().contains("'value' must be in range")))));
+  });
+
+  test("Find Value over max range", () {
+    var rawCommand =
+        RawCommand.withPositionalArgs("bsharptree-find", [100000]);
+
+    expect(
+        () => BSharpTreeInsertCommand.build(rawCommand),
+        throwsA(allOf(
+            isException,
+            predicate((e) =>
+                e.toString().contains("'value' must be in range")))));
   });
 }
