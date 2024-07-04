@@ -43,7 +43,7 @@ class BSharpSequentialNode<T extends Comparable<T>> extends BSharpNode<T> {
       IndexRecord<T>? nodeIndexRecord = parentNode.findIndexRecordById(id);
       //Se actualiza la key del index record
       if (nodeIndexRecord != null && length() > 0) {
-        nodeIndexRecord.key = nodeIndexRecord.rightNode.firstKey()!; //TODO asegurarse que el ! este correcto acá
+        nodeIndexRecord.key = nodeIndexRecord.rightNode.firstKey()!;
       }
     }
   }

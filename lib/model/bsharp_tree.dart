@@ -37,10 +37,12 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
   bool isRoot(BSharpNode<T> node) => node.id == _rootNode?.id;
 
+  /// Returns a map with the level as a key, and all of the nodes of the tree in that level
+  /// as value
   Map<int, List<BSharpNode<T>>> getAllNodesByLevel() {
     Map<int, List<BSharpNode<T>>> allNodesMap = {};
     if (_rootNode != null) {
-      addNodesByLevelRecursively(allNodesMap, _rootNode!);
+      _addNodesByLevelRecursively(allNodesMap, _rootNode!);
     } else {
       allNodesMap = {0: List.empty()};
     }
@@ -48,7 +50,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     return allNodesMap;
   }
 
-  void addNodesByLevelRecursively(
+  void _addNodesByLevelRecursively(
       Map<int, List<BSharpNode<T>>> nodesMap, BSharpNode<T> current) {
     List<BSharpNode<T>>? nodesList = nodesMap[current.level];
     if (nodesList != null) {
@@ -58,135 +60,18 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     }
     if (!current.isLevelZero) {
       var node = current as BSharpIndexNode<T>;
-      addNodesByLevelRecursively(nodesMap, node.leftNode);
+      _addNodesByLevelRecursively(nodesMap, node.leftNode);
       for (var indexRecord in node.rightNodes) {
-        addNodesByLevelRecursively(nodesMap, indexRecord.rightNode);
+        _addNodesByLevelRecursively(nodesMap, indexRecord.rightNode);
       }
     }
   }
 
-  /// Inserts recursively a [value] in the B# tree
-  ///
-  /// Using the root node as the starting point, finds recursively the correct sequential node to insert the value,
-  /// then goes back to update every node necesary in the recursion
-  /// If the value is already on the sequential node, it throws a [ElementInsertionException]
-  IndexRecord<T>? _insertRecursively(
-      BSharpNode<T> current, BSharpIndexNode<T>? parent, T value) {
-    notifyObservers(NodeRead(targetId: current.id));
-    if (current.isLevelZero) {
-      // Encontré el nodo secuencial donde deberia insertar
-      var node = current as BSharpSequentialNode<T>;
-
-      logger.debug(() => "nodo ${node.id} es donde se va a insertar el valor");
-      if (node.isValueOnNode(value)) {
-        logger.error(
-            () => "el valor $value ya se encuentra en el nodo ${node.id}");
-        throw ElementInsertionException(
-            "cant insert the value $value, it's already on the tree");
-      }
-      node.addToNode(value);
-      notifyObservers(
-          NodeWritten(targetId: node.id, transitionTree: this.clone()));
-      if (node.isOverflowed()) {
-        notifyObservers(
-            NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-
-        return _balanceSequentialNodeOverflow(node);
-      }
-    } else {
-      var node = current as BSharpIndexNode<T>;
-      var nextNode = node.findNextNodeForKey(value);
-      IndexRecord<T>? promotedKey =
-          _insertRecursively(nextNode, current, value);
-      //Intento agregar la key en el nodo
-      if (promotedKey != null) {
-        logger.debug(() =>
-            "insertando key promocionada: ${promotedKey.key} en nodo ${node.id}");
-        node.addIndexRecordToNode(promotedKey);
-        node.fixFamilyRelations();
-        notifyObservers(
-            NodeWritten(targetId: node.id, transitionTree: this.clone()));
-        if (node.isOverflowed()) {
-          notifyObservers(
-              NodeOverflow(targetId: node.id, transitionTree: this.clone()));
-          return _balanceIndexNodeOverflow(node);
-        }
-      }
-    }
-    return null;
-  }
-
-  /// Removes recursively a [value] in the B# tree
-  ///
-  /// Using the root node as the starting point, finds recursively the correct sequential node to remove the value,
-  /// then goes back to update every node necesary in the recursion
-  /// If the value is not on the sequential node, it throws a [ElementNotFoundException]
-  IndexRecord<T>? _removeRecursively(BSharpNode<T> current, T value) {
-    notifyObservers(NodeRead(targetId: current.id));
-    if (current.isLevelZero) {
-      var node = current as BSharpSequentialNode<T>;
-      if (node.values.contains(value)) {
-        logger.debug(() =>
-            "el valor a remover '$value' se encontró en el nodo con id: ${node.id}");
-        node.removeValue(value);
-        notifyObservers(
-            NodeWritten(targetId: node.id, transitionTree: this.clone()));
-
-        if (!isRoot(node) && node.isUnderflowed()) {
-          return _balanceSequentialNodeUnderFlow(node);
-        }
-      } else {
-        throw ElementNotFoundException("Element $value not found in the tree");
-      }
-    } else {
-      var node = current as BSharpIndexNode<T>;
-      BSharpNode<T> nextNode = node.findNextNodeForKey(value);
-      IndexRecord<T>? indexRecordToUpdate = _removeRecursively(nextNode, value);
-
-      if (indexRecordToUpdate != null) {
-        logger.debug(() =>
-            "index record a remover con id de rightNode: ${indexRecordToUpdate.rightNode.id}");
-        node.rightNodes.removeWhere((indexRecord) =>
-            indexRecord.rightNode.id == indexRecordToUpdate.rightNode.id);
-        if (node.parent != null && node.isUnderflowed()) {
-          notifyObservers(
-              NodeWritten(targetId: node.id, transitionTree: this.clone()));
-          return _balanceIndexNodeUnderflow(node);
-        } else {
-          if (node.parent == null && node.length() == 0) {
-            BSharpNode<T> leftChild = node.leftNode;
-            if (node.leftNode.isLevelZero) {
-              //Hay que convertir el nodo raiz de un index node a un sequential node
-              leftChild = leftChild as BSharpSequentialNode<T>;
-              _rootNode = _buildRootSequentialNode(leftChild.values,
-                  isReplacingRoot: true);
-            } else {
-              leftChild = leftChild as BSharpIndexNode<T>;
-              node.leftNode = leftChild.leftNode;
-              node.rightNodes = leftChild.rightNodes;
-              node.level = node.level - 1;
-              node.fixFamilyRelations();
-            }
-            _release(leftChild);
-            notifyObservers(NodeRelease(targetId: leftChild.id));
-          } else {
-            node.fixFamilyRelations();
-          }
-
-          notifyObservers(NodeWritten(targetId: node.id, transitionTree: this));
-        }
-      } else {
-        if (node.leftNode.length() == 0 && node.rightNodes.isEmpty) {
-          var indexRecord = node.getParent()!.findIndexRecordById(node.id);
-          _release(node);
-          return indexRecord;
-        }
-        node.fixFamilyRelations();
-      }
-    }
-    return null;
-  }
-
+  /// Travels the tree recursively, trying to find the sequential node in which a [value]
+  /// should be found, then applies the function of the [modifier] to that node.
+  /// 
+  /// If that modification results in an index record to be updated, then it also applies a
+  /// function from the [modifier] to that node.
   IndexRecord? _searchTreeAndModify(
       BSharpNode<T> current, T value, NodeManager<T> modifier) {
     notifyObservers(NodeRead(targetId: current.id));
@@ -205,6 +90,9 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     }
   }
 
+  /// Tries to find a [value] in the B# tree and returns the node id
+  ///
+  /// if [value] is not on the tree, returns the node where it should be
   String find(T value) {
     var modifier = NodeValueFinder<T>(value, _getNodeId);
     if (_rootNode != null) {
@@ -277,7 +165,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   void _addValueToSequentialNode(BSharpSequentialNode<T> node, T value) {
     node.addToNode(value);
     notifyObservers(
-        NodeWritten(targetId: _rootNode!.id, transitionTree: this.clone()));
+        NodeWritten(targetId: node.id, transitionTree: this.clone()));
   }
 
   void _addIndexRecordToNode(
@@ -482,7 +370,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       BSharpIndexNode<T> node) {
     IndexRecord<T>? indexRecordToUpdate;
     var isTheLastBranch = node.rightSibling == null;
-    if(isTheLastBranch){
+    if (isTheLastBranch) {
       indexRecordToUpdate = _releaseIndexNodeIfEmpty(node);
     } else {
       indexRecordToUpdate = _manageUnderflowOnIndexNode(node);
@@ -522,11 +410,11 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       }
       _release(leftChild);
       notifyObservers(NodeRelease(targetId: leftChild.id));
+      notifyObservers(NodeWritten(targetId: node.id, transitionTree: this.clone()));
     } else {
       node.fixFamilyRelations();
     }
 
-    notifyObservers(NodeWritten(targetId: node.id, transitionTree: this));
     return null;
   }
 
@@ -569,10 +457,12 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         NodeWritten(targetId: node.id, transitionTree: this.clone()));
   }
 
-  /// Balances index nodes, taking a node (and its children) from the right sibling and adding a node on the left sibling
+  /// Balances index nodes, taking a node (and its children) from the right sibling and 
+  /// adding a node on the left sibling
   ///
-  /// Using the [parent] key and the [rightSiblingNode] left children creates a new [IndexRecord] to add to the left sibling
-  /// then removes the first [IndexRecord] of the right sibling, to use its node as the new left children of the node.
+  /// Using the [parent] key and the [rightSiblingNode] left children creates a new [IndexRecord]
+  /// to add to the left sibling then removes the first [IndexRecord] of the right sibling, to use 
+  /// its node as the new left children of the node.
   /// Lastly, updates the right sibling index record with the new smallest key.
   void _balanceIndexNodesRightToLeft(BSharpIndexNode<T> leftSiblingNode,
       BSharpIndexNode<T> rightSiblingNode, BSharpIndexNode<T> parent) {
@@ -720,7 +610,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     notifyObservers(NodeWritten(
         targetId: newNode.id,
         transitionTree: this
-            .clone())); //TODO acá se deberian escribir tambien los otros nodos
+            .clone()));
     return IndexRecord(newNode.firstKey()!, newNode);
   }
 
@@ -807,13 +697,6 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   }
 
   /// Inserts a [listOfValues] into the tree, one by one
-  /*void insertAll(List<T> listOfValues) {
-    logger.debug(() => "values to insert: $listOfValues");
-    for (var value in listOfValues) {
-      insert(value);
-    }
-  }*/
-
   void insertAll(List<T> listOfValues) {
     logger.debug(() => "values to insert: $listOfValues");
     for (var value in listOfValues) {
@@ -1132,6 +1015,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     return false;
   }
 
+  /// Clones a B# Tree, copying all the info of its nodes and their relationship with each other
   BSharpTree<T> clone() {
     BSharpNode<T>? rootNode;
     if (_rootNode != null) {
@@ -1157,7 +1041,8 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
           .map((indexRecord) => IndexRecord(
               indexRecord.key, _cloneRecursively(indexRecord.rightNode)))
           .toList();
-      var indexNodeCopy = indexNode.copyWith(leftNode: leftNode, rightNodes: rightNodes);
+      var indexNodeCopy =
+          indexNode.copyWith(leftNode: leftNode, rightNodes: rightNodes);
       indexNodeCopy.fixFamilyRelations();
       return indexNodeCopy;
     } else {
@@ -1166,6 +1051,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     }
   }
 
+  /// Returns a new sequential node, with a new node id or reusing a free node
   BSharpSequentialNode<T> _buildSequentialNode(List<T> values,
       {String? givenNodeId, int? givenCapacity, bool isReplacingRoot = false}) {
     var nodeId = "";
@@ -1191,15 +1077,15 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     return node;
   }
 
-  BSharpIndexNode<T> _buildRootIndexNode(
-      BSharpNode<T> leftNode, List<IndexRecord<T>> rightNodes, int level,
+  BSharpSequentialNode<T> _buildRootSequentialNode(List<T> values,
       {bool isReplacingRoot = false}) {
-    return _buildIndexNode(leftNode, rightNodes, level,
-        givenNodeId: "0-1",
+    return _buildSequentialNode(values,
         givenCapacity: rootMaxCapacity,
+        givenNodeId: "0-1",
         isReplacingRoot: isReplacingRoot);
   }
 
+  /// Returns a new index node, with a new node id or reusing a free node
   BSharpIndexNode<T> _buildIndexNode(
       BSharpNode<T> leftNode, List<IndexRecord<T>> rightNodes, int level,
       {String? givenNodeId, int? givenCapacity, bool isReplacingRoot = false}) {
@@ -1225,11 +1111,12 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     return node;
   }
 
-  BSharpSequentialNode<T> _buildRootSequentialNode(List<T> values,
+  BSharpIndexNode<T> _buildRootIndexNode(
+      BSharpNode<T> leftNode, List<IndexRecord<T>> rightNodes, int level,
       {bool isReplacingRoot = false}) {
-    return _buildSequentialNode(values,
-        givenCapacity: rootMaxCapacity,
+    return _buildIndexNode(leftNode, rightNodes, level,
         givenNodeId: "0-1",
+        givenCapacity: rootMaxCapacity,
         isReplacingRoot: isReplacingRoot);
   }
 
@@ -1242,11 +1129,16 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     }
   }
 
+  ///Releases a node, adding its id to the free node list
   void _release(BSharpNode<T> node) {
     freeNodesIds.add(node.id);
     nodesQuantity--;
   }
 
+  ///Splits the values of a node in two new nodes
+  ///
+  ///If the tree has autoincremental keys, it fills the first node to maximum capacity,
+  ///leaving the rest of the values in the second node.
   (BSharpSequentialNode<T>, BSharpSequentialNode<T>) _splitRootNodesInTwo(
       BSharpSequentialNode<T> node) {
     if (keysAreAutoincremental) {
@@ -1262,128 +1154,6 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
     }
   }
 
-  IndexRecord<T>? _balanceSequentialNodeOverflow(BSharpSequentialNode<T> node) {
-    IndexRecord<T>? indexRecord;
-    if (keysAreAutoincremental) {
-      var lastValue = node.values.removeLast();
-      var newNode = _buildSequentialNode([lastValue]);
-      node.nextNode = newNode;
-      notifyObservers(
-          NodeWritten(targetId: newNode.id, transitionTree: this.clone()));
-      indexRecord = IndexRecord(newNode.firstKey()!, newNode);
-    } else {
-      var hasBalancedWithSibling =
-          _tryToBalanceSequentialNodesWithSibling(node);
-
-      if (!hasBalancedWithSibling) {
-        // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
-        // ambos nodos, crear uno nuevo en el medio y repartir las claves en 3
-        indexRecord = _splitSequentialNodeWithAnySibling(node);
-      }
-    }
-    return indexRecord;
-  }
-
-  IndexRecord<T>? _balanceIndexNodeOverflow(BSharpIndexNode<T> node) {
-    IndexRecord<T>? indexRecord;
-    if (keysAreAutoincremental) {
-      if (!isRoot(node)) {
-        var lastIndexRecord = node.rightNodes.removeLast();
-        var newNode =
-            _buildIndexNode(lastIndexRecord.rightNode, [], node.level);
-
-        node.fixFamilyRelations();
-        newNode.fixFamilyRelations();
-        notifyObservers(NodeWritten(targetId: newNode.id));
-        notifyObservers(
-            NodeWritten(targetId: node.id, transitionTree: this.clone()));
-
-        indexRecord = IndexRecord(lastIndexRecord.key, newNode);
-      } else {
-        var recordToPromote = node.rightNodes.elementAt(maxCapacity);
-
-        var newLeftNode = _buildIndexNode(
-            node.leftNode, node.rightNodes.sublist(0, maxCapacity), node.level);
-        var newRightNode = _buildIndexNode(recordToPromote.rightNode,
-            node.rightNodes.sublist(maxCapacity + 1), node.level);
-
-        node.leftNode = newLeftNode;
-        node.rightNodes = [IndexRecord(recordToPromote.key, newRightNode)];
-        node.level += 1;
-
-        newLeftNode.fixFamilyRelations();
-        newRightNode.fixFamilyRelations();
-        node.fixFamilyRelations();
-
-        notifyObservers(NodeWritten(targetId: newLeftNode.id));
-        notifyObservers(NodeWritten(targetId: newRightNode.id));
-        notifyObservers(
-            NodeWritten(targetId: node.id, transitionTree: this.clone()));
-      }
-    } else {
-      if (!isRoot(node)) {
-        var hasBalancedWithSibling =
-            _tryToBalanceOverflowedIndexNodeWithSiblings(node);
-        if (!hasBalancedWithSibling) {
-          //no puedo rotar ni a izq ni a derecha, tengo que juntar las claves y dividir el nodo en 3
-          indexRecord = _splitSiblingIndexNodeWithAnySibling(node);
-        }
-      } else {
-        //current es la raiz y tengo que dividirla en dos
-        _splitIndexRootNode(node);
-      }
-    }
-    return indexRecord;
-  }
-
-  IndexRecord<T>? _balanceSequentialNodeUnderFlow(
-      BSharpSequentialNode<T> node) {
-    var isTheLastBranch = node.getParent()!.rightSibling == null;
-    IndexRecord<T>? indexRecordToUpdate;
-    if (keysAreAutoincremental && isTheLastBranch) {
-      if (node.values.isEmpty) {
-        var parentNode = node.getParent()!;
-        indexRecordToUpdate = parentNode.findIndexRecordById(node.id);
-        _release(node);
-        notifyObservers(
-            NodeRelease(targetId: node.id, transitionTree: this.clone()));
-      }
-    } else {
-      notifyObservers(
-          NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
-      var hasBalancedWithSibling =
-          _tryToBalanceUnderflowedSequentialNodeWithSiblings(node);
-
-      if (!hasBalancedWithSibling) {
-        // Si llegué acá no pude rebalancear con ninguno de los hermanos porque estan completos, tengo que unir
-        // ambos nodos
-        indexRecordToUpdate = _fuseSequentialNodeWithAnySibling(node);
-      }
-    }
-    return indexRecordToUpdate;
-  }
-
-  IndexRecord<T>? _balanceIndexNodeUnderflow(BSharpIndexNode<T> node) {
-    IndexRecord<T>? indexRecordToUpdate;
-    var isTheLastBranch = node.rightSibling == null;
-    if (!keysAreAutoincremental || !isTheLastBranch) {
-      notifyObservers(
-          NodeUnderflow(targetId: node.id, transitionTree: this.clone()));
-      var hasBalancedWithSibling =
-          _tryToBalanceUnderflowedIndexNodeWithSiblings(node);
-      if (!hasBalancedWithSibling) {
-        indexRecordToUpdate = _fuseIndexNodesWithAnySibling(node);
-      }
-    } else {
-      if (node.leftNode.length() == 0 && node.rightNodes.isEmpty) {
-        indexRecordToUpdate = node.getParent()!.findIndexRecordById(node.id);
-        _release(node);
-      }
-      node.fixFamilyRelations();
-    }
-    return indexRecordToUpdate;
-  }
-
   IndexRecord<T>? _releaseIndexNodeIfEmpty(BSharpIndexNode<T> indexNode) {
     IndexRecord<T>? result;
     if (indexNode.leftNode.length() == 0 && indexNode.rightNodes.isEmpty) {
@@ -1395,6 +1165,12 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   }
 }
 
+/// A class that represents an object that manages a node
+///
+/// It receives a [value] that will be used in any operation over a node, which may be a modification
+/// or finding the node in which this value should be.
+/// It also receives a [functionToApplyToSequentialNode] to be defined when extending
+/// and an optional [functionToApplyToIndexNode] that has a default behavior.
 abstract class NodeManager<T extends Comparable<T>> {
   final T value;
   final Function functionToApplyToSequentialNode;
@@ -1414,6 +1190,22 @@ abstract class NodeManager<T extends Comparable<T>> {
   }
 }
 
+/// A class that represents an object that modifies a node
+///
+/// It applies a function to a sequential or index node, if the node is unbalanced (meaning it's in an
+/// underflow or an overflow) after modifiying it, checks if the node is a root and manages this 
+/// unbalance.
+/// 
+/// This class receives several functions on its creation that will be applied on a node modification
+/// [isRoot] is used to evaluate if the node is the root of the tree
+/// [manageUnbalanceOnSequentialRootNode] will be called if the change in the node produces an unbalance 
+/// in a sequential node, that is a root too
+/// [manageUnbalanceOnSequentialNode] will be called if the change in the node produces an unbalance 
+/// in a sequential node
+/// [manageUnbalanceOnIndexRootNode] will be called if the change in the node produces an unbalance 
+/// in an index node, that is a root too
+/// [manageUnbalanceOnIndexNode] will be called if the change in the node produces an unbalance 
+/// in an index node
 abstract class NodeModifier<T extends Comparable<T>> extends NodeManager<T> {
   final bool Function(BSharpNode<T>) isRoot;
   final IndexRecord<T>? Function(BSharpSequentialNode<T> node)
@@ -1473,6 +1265,7 @@ abstract class NodeModifier<T extends Comparable<T>> extends NodeManager<T> {
   bool isUnbalanced(BSharpNode<T> node);
 }
 
+///  A class that extends NodeModifier, with methods used on the insertion of a value in a node
 class NodeValueInserter<T extends Comparable<T>> extends NodeModifier<T> {
   NodeValueInserter(
       super.value,
@@ -1500,6 +1293,7 @@ class NodeValueInserter<T extends Comparable<T>> extends NodeModifier<T> {
   }
 }
 
+///  A class that extends NodeModifier, with methods used on the removal of a value in a node
 class NodeValueRemover<T extends Comparable<T>> extends NodeModifier<T> {
   NodeValueRemover(
       super.value,
@@ -1524,6 +1318,7 @@ class NodeValueRemover<T extends Comparable<T>> extends NodeModifier<T> {
   }
 }
 
+///  A class that extends NodeManager, with methods used to search for a value in a node
 class NodeValueFinder<T extends Comparable<T>> extends NodeManager<T> {
   String? result;
 

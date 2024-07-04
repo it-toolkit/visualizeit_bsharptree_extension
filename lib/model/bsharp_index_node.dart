@@ -12,6 +12,7 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
   BSharpIndexNode.createNode(
       super.id, super.level, super.maxCapacity, this.leftNode, this.rightNodes);
 
+  /// Takes all of the nodes children and fixes their sibling relationship
   void fixFamilyRelations() {
     var allChildrenNodes = _getAllChildrenNodes();
 
@@ -47,36 +48,9 @@ class BSharpIndexNode<T extends Comparable<T>> extends BSharpNode<T> {
     return rightNodes.isNotEmpty ? rightNodes.first.key : null;
   }
 
-  IndexRecord<T>? findIndexRecordFor(T keyToFind) {
-    return rightNodes
-        .singleWhereOrNull((indexRecord) => indexRecord.key == keyToFind);
-  }
-
   IndexRecord<T>? findIndexRecordById(String id) {
     return rightNodes
         .singleWhereOrNull((indexRecord) => indexRecord.rightNode.id == id);
-  }
-
-  //Encuentra el hermano derecho a una clave
-  IndexRecord<T>? findRightSiblingOf(T keyToFind) {
-    return rightNodes
-        .firstWhereOrNull((element) => element.key.compareTo(keyToFind) > 0);
-  }
-
-  //Encuentra el hermano izquierdo, si está en la lista de rightNodes
-  IndexRecord<T>? findLeftSiblingOf(T keyToFind) {
-    return rightNodes
-        .lastWhereOrNull((element) => element.key.compareTo(keyToFind) < 0);
-  }
-
-  BSharpNode<T> findLeftSiblingById(int id) {
-    int siblingPosition =
-        rightNodes.indexWhere((element) => element.rightNode.id == id) - 1;
-    if (siblingPosition < 0) {
-      return leftNode;
-    } else {
-      return rightNodes.elementAt(siblingPosition).rightNode;
-    }
   }
 
   BSharpIndexNode<T>? getLeftSibling() => super.leftSibling != null
