@@ -1,8 +1,5 @@
 import 'package:visualizeit_bsharptree_extension/model/bsharp_tree.dart';
 import 'package:visualizeit_bsharptree_extension/widget/transition_view.dart';
-import 'package:visualizeit_extensions/logging.dart';
-
-final logger = Logger("extension.bsharptree.model");
 
 abstract class BSharpTreeTransition implements TransitionView {
   final String _targetId;

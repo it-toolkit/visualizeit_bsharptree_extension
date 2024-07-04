@@ -265,12 +265,12 @@ void main() {
       while (setOfInts.length < 50) {
         setOfInts.add(random.nextInt(1000));
       }
-
       tree.insertAll(setOfInts.toList());
       expect(tree.depth, greaterThanOrEqualTo(3));
 
       List<int> shuffledList = setOfInts.toList();
       shuffledList.shuffle();
+      //debugPrint("valores a eliminar $shuffledList");
 
       for (var value in shuffledList) {
         tree.remove(value);
@@ -674,7 +674,9 @@ void main() {
       expect(tree.lastNodeId, lastNodeIdBeforeInsert + 1);
     });
 
-    test("remove value not in the last branch, in tree with autoincremental values", () {
+    test(
+        "remove value not in the last branch, in tree with autoincremental values",
+        () {
       var tree = BSharpTree<num>(3, keysAreAutoincremental: true);
       TreeLoggerObserver(tree);
       for (var i = 1; i < 26; i++) {
@@ -688,10 +690,10 @@ void main() {
       tree.remove(2);
       tree.remove(1);
       tree.remove(7);
-
     });
 
-    test("remove value in the last branch, in tree with autoincremental values", () {
+    test("remove value in the last branch, in tree with autoincremental values",
+        () {
       var tree = BSharpTree<num>(3, keysAreAutoincremental: true);
       TreeLoggerObserver(tree);
       for (var i = 1; i < 31; i++) {
@@ -704,7 +706,6 @@ void main() {
       tree.remove(25);
       tree.remove(26);
       tree.remove(27);
-
     });
   });
 
