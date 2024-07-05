@@ -59,8 +59,8 @@ void main() {
     BSharpTreeInsertCommand? insertCommand = scriptingExtension
         .buildCommand(insertRawCommand) as BSharpTreeInsertCommand?;
 
-    BSharpTreeModel? model = createCommand!.call(CommandContext());
-    Result result = insertCommand!.call(model, CommandContext());
+    BSharpTreeModel? model = createCommand!.call(CommandContext(timeFrame: const Duration(seconds: 1)));
+    Result result = insertCommand!.call(model, CommandContext(timeFrame: const Duration(seconds: 1)));
     model = result.model as BSharpTreeModel?;
 
     // Check the widget
@@ -90,8 +90,8 @@ void main() {
     BSharpTreeInsertCommand? insertCommand = scriptingExtension
         .buildCommand(insertRawCommand) as BSharpTreeInsertCommand?;
 
-    BSharpTreeModel? model = createCommand!.call(CommandContext());
-    Result firstResult = insertCommand!.call(model, CommandContext());
+    BSharpTreeModel? model = createCommand!.call(CommandContext(timeFrame: const Duration(seconds: 1)));
+    Result firstResult = insertCommand!.call(model, CommandContext(timeFrame: const Duration(seconds: 1)));
 
     expect(firstResult.finished, false);
     expect(firstResult.model, isNotNull);

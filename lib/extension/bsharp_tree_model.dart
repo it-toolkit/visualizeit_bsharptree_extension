@@ -39,7 +39,7 @@ class BSharpTreeModel extends Model {
       _transitions.isNotEmpty ? _transitions[_currentFrame] : null;
   int get _pendingFrames => _transitions.length - _currentFrame - 1;
 
-  (int, Model) executeCommand(BSharpTreeCommand command) {
+  (int, Model) executeCommand(BSharpTreeCommand command, {bool isInstantExecution = false}) {
     if (_canExecuteCommand(command)) {
       if (isInTransition()) {
         //El arbol está en transicion
@@ -48,27 +48,37 @@ class BSharpTreeModel extends Model {
           _lastTransitionTree = _transitions[_currentFrame].transitionTree!;
         }
       } else {
-        //Arranca una transición
-        _lastTransitionTree = _baseTree.clone();
-        var transitionObserver = TreeTransitionObserver(_baseTree);
-        var functionToExecute = command.commandToFunction();
-        try {
-          functionToExecute(_baseTree);
-        } catch(exception){
-          logger.error(() => "Exception thrown: $exception");
-        }
-        commandInExecution = command;
-        _currentFrame = 0;
-        _transitions = transitionObserver.transitions;
-        transitionObserver.removeObserver();
-        if (_transitions.firstOrNull?.transitionTree != null) {
-          _lastTransitionTree = _transitions.first.transitionTree;
-        }
+        //Arranca una nueva ejecución
+        executeNewCommand(command, isInstantExecution);
       }
       return (_pendingFrames, this);
     } else {
       throw UnsupportedError(
           "cant execute a command while another command is on transition");
+    }
+  }
+
+  void executeNewCommand(BSharpTreeCommand command, bool isInstantExecution) {
+    _lastTransitionTree = _baseTree.clone();
+    var transitionObserver = TreeTransitionObserver(_baseTree);
+    var functionToExecute = command.commandToFunction();
+    try {
+      functionToExecute(_baseTree);
+    } catch(exception){
+      logger.error(() => "Exception thrown: $exception");
+    }
+    _currentFrame = 0;
+    if(!isInstantExecution){
+      commandInExecution = command;
+      _currentFrame = 0;
+      _transitions = transitionObserver.transitions;
+    } else {
+      _lastTransitionTree = _baseTree.clone();
+    }
+    
+    transitionObserver.removeObserver();
+    if (_transitions.firstOrNull?.transitionTree != null) {
+      _lastTransitionTree = _transitions.first.transitionTree;
     }
   }
 

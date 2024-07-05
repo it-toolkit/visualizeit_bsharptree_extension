@@ -7,12 +7,10 @@ import 'package:visualizeit_extensions/scripting.dart';
 
 class BSharpTreeModelMock extends Mock implements BSharpTreeModel {}
 
-class CommandContextMock extends Mock implements CommandContext {}
-
 void main() {
   var treeModelMock = BSharpTreeModelMock();
   var resultTreeModelMock = BSharpTreeModelMock();
-  var commandContextMock = CommandContextMock();
+  var commandContext = CommandContext();
 
   tearDown(() => reset(treeModelMock));
 
@@ -30,13 +28,21 @@ void main() {
     expect(command.modelName, equals("modelName"));
   });
 
+  test("find command construction", () {
+    var command = BSharpTreeFindCommand(10, "modelName");
+
+    expect(command.uuid, isNotEmpty);
+    expect(command.modelName, equals("modelName"));
+  });
+
   test("insert command call on a model that has no pending frames", () {
     var command = BSharpTreeInsertCommand(10, "modelName");
-    when(() => treeModelMock.executeCommand(command))
+    when(() => treeModelMock.executeCommand(command,
+            isInstantExecution: any(named: "isInstantExecution")))
         .thenReturn((0, resultTreeModelMock));
     when(() => treeModelMock.clone()).thenReturn(treeModelMock);
 
-    var commandResult = command.call(treeModelMock, commandContextMock);
+    var commandResult = command.call(treeModelMock, commandContext);
 
     expect(commandResult.finished, isTrue);
     expect(commandResult.model,
@@ -45,11 +51,26 @@ void main() {
 
   test("remove command call on a model that has no pending frames", () {
     var command = BSharpTreeRemoveCommand(10, "modelName");
-    when(() => treeModelMock.executeCommand(command))
+    when(() => treeModelMock.executeCommand(command,
+            isInstantExecution: any(named: "isInstantExecution")))
         .thenReturn((0, resultTreeModelMock));
     when(() => treeModelMock.clone()).thenReturn(treeModelMock);
 
-    var commandResult = command.call(treeModelMock, commandContextMock);
+    var commandResult = command.call(treeModelMock, commandContext);
+
+    expect(commandResult.finished, isTrue);
+    expect(commandResult.model,
+        allOf(isA<BSharpTreeModel>(), equals(resultTreeModelMock)));
+  });
+
+  test("find command call on a model that has no pending frames", () {
+    var command = BSharpTreeFindCommand(10, "modelName");
+    when(() => treeModelMock.executeCommand(command,
+            isInstantExecution: any(named: "isInstantExecution")))
+        .thenReturn((0, resultTreeModelMock));
+    when(() => treeModelMock.clone()).thenReturn(treeModelMock);
+
+    var commandResult = command.call(treeModelMock, commandContext);
 
     expect(commandResult.finished, isTrue);
     expect(commandResult.model,
@@ -58,11 +79,12 @@ void main() {
 
   test("insert command call on a model that keeps ongoing", () {
     var command = BSharpTreeInsertCommand(10, "modelName");
-    when(() => treeModelMock.executeCommand(command))
+    when(() => treeModelMock.executeCommand(command,
+            isInstantExecution: any(named: "isInstantExecution")))
         .thenReturn((4, resultTreeModelMock));
     when(() => treeModelMock.clone()).thenReturn(treeModelMock);
 
-    var commandResult = command.call(treeModelMock, commandContextMock);
+    var commandResult = command.call(treeModelMock, commandContext);
 
     expect(commandResult.finished, isFalse);
     expect(commandResult.model,
@@ -71,27 +93,56 @@ void main() {
 
   test("remove command call on a model that keeps ongoing", () {
     var command = BSharpTreeRemoveCommand(10, "modelName");
-    when(() => treeModelMock.executeCommand(command))
+    when(() => treeModelMock.executeCommand(command,
+            isInstantExecution: any(named: "isInstantExecution")))
         .thenReturn((4, resultTreeModelMock));
     when(() => treeModelMock.clone()).thenReturn(treeModelMock);
 
-    var commandResult = command.call(treeModelMock, commandContextMock);
+    var commandResult = command.call(treeModelMock, commandContext);
 
     expect(commandResult.finished, isFalse);
     expect(commandResult.model,
         allOf(isA<BSharpTreeModel>(), equals(resultTreeModelMock)));
   });
 
+  test("find command call on a model that keeps ongoing", () {
+    var command = BSharpTreeFindCommand(10, "modelName");
+    when(() => treeModelMock.executeCommand(command,
+            isInstantExecution: any(named: "isInstantExecution")))
+        .thenReturn((4, resultTreeModelMock));
+    when(() => treeModelMock.clone()).thenReturn(treeModelMock);
+
+    var commandResult = command.call(treeModelMock, commandContext);
+
+    expect(commandResult.finished, isFalse);
+    expect(commandResult.model,
+        allOf(isA<BSharpTreeModel>(), equals(resultTreeModelMock)));
+  });
+
+  test("insert command call with instant execution", () {
+    var command = BSharpTreeInsertCommand(10, "modelName");
+    var otherCommandContext = CommandContext();
+    when(() => treeModelMock.executeCommand(command,
+            isInstantExecution: otherCommandContext.timeFrame == Duration.zero))
+        .thenReturn((0, resultTreeModelMock));
+    when(() => treeModelMock.clone()).thenReturn(treeModelMock);
+
+    var commandResult = command.call(treeModelMock, otherCommandContext);
+
+    expect(commandResult.finished, isTrue);
+    expect(commandResult.model,
+        allOf(isA<BSharpTreeModel>(), equals(resultTreeModelMock)));
+  });
+
   test("Insert Value under min range", () {
-    var rawCommand =
-        RawCommand.withPositionalArgs("bsharptree-insert", [0]);
+    var rawCommand = RawCommand.withPositionalArgs("bsharptree-insert", [0]);
 
     expect(
         () => BSharpTreeInsertCommand.build(rawCommand),
         throwsA(allOf(
             isException,
-            predicate((e) =>
-                e.toString().contains("'value' must be in range")))));
+            predicate(
+                (e) => e.toString().contains("'value' must be in range")))));
   });
 
   test("Insert Value over max range", () {
@@ -102,20 +153,19 @@ void main() {
         () => BSharpTreeInsertCommand.build(rawCommand),
         throwsA(allOf(
             isException,
-            predicate((e) =>
-                e.toString().contains("'value' must be in range")))));
+            predicate(
+                (e) => e.toString().contains("'value' must be in range")))));
   });
 
   test("Remove Value under min range", () {
-    var rawCommand =
-        RawCommand.withPositionalArgs("bsharptree-remove", [0]);
+    var rawCommand = RawCommand.withPositionalArgs("bsharptree-remove", [0]);
 
     expect(
         () => BSharpTreeInsertCommand.build(rawCommand),
         throwsA(allOf(
             isException,
-            predicate((e) =>
-                e.toString().contains("'value' must be in range")))));
+            predicate(
+                (e) => e.toString().contains("'value' must be in range")))));
   });
 
   test("Remove Value over max range", () {
@@ -126,31 +176,29 @@ void main() {
         () => BSharpTreeInsertCommand.build(rawCommand),
         throwsA(allOf(
             isException,
-            predicate((e) =>
-                e.toString().contains("'value' must be in range")))));
+            predicate(
+                (e) => e.toString().contains("'value' must be in range")))));
   });
 
   test("Find Value under min range", () {
-    var rawCommand =
-        RawCommand.withPositionalArgs("bsharptree-find", [0]);
+    var rawCommand = RawCommand.withPositionalArgs("bsharptree-find", [0]);
 
     expect(
         () => BSharpTreeInsertCommand.build(rawCommand),
         throwsA(allOf(
             isException,
-            predicate((e) =>
-                e.toString().contains("'value' must be in range")))));
+            predicate(
+                (e) => e.toString().contains("'value' must be in range")))));
   });
 
   test("Find Value over max range", () {
-    var rawCommand =
-        RawCommand.withPositionalArgs("bsharptree-find", [10000]);
+    var rawCommand = RawCommand.withPositionalArgs("bsharptree-find", [10000]);
 
     expect(
         () => BSharpTreeInsertCommand.build(rawCommand),
         throwsA(allOf(
             isException,
-            predicate((e) =>
-                e.toString().contains("'value' must be in range")))));
+            predicate(
+                (e) => e.toString().contains("'value' must be in range")))));
   });
 }

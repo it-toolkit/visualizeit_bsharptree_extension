@@ -21,9 +21,9 @@ abstract class BSharpTreeCommand extends ModelCommand {
     int pendingFrames;
     Model? resultModel;
 
-    (pendingFrames, resultModel) = treeModel.executeCommand(this);
+    (pendingFrames, resultModel) = treeModel.executeCommand(this, isInstantExecution: context.timeFrame == Duration.zero);
 
-    var result = Result(finished: pendingFrames == 0, model: resultModel);
+    var result = Result(finished: pendingFrames <= 0, model: resultModel);
 
     _logger.info(() => "command result: $result");
 
