@@ -8,6 +8,6 @@ class TreeLoggerObserver extends TreeObserver {
 
   @override
   void notify(BSharpTreeTransition transition) {
-    logger.debug(() => transition.toString());
+    logger.trace(() => transition.toString());
   }
 }

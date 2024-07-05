@@ -270,7 +270,6 @@ void main() {
 
       List<int> shuffledList = setOfInts.toList();
       shuffledList.shuffle();
-      //debugPrint("valores a eliminar $shuffledList");
 
       for (var value in shuffledList) {
         tree.remove(value);

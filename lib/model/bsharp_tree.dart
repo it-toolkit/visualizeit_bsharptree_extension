@@ -114,7 +114,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   ///
   /// May cause the B# tree to split nodes or grow on height or width
   void insert(T value) {
-    logger.debug(() => "insertando value: $value");
+    logger.trace(() => "insertando value: $value");
     if (keysAreAutoincremental) {
       if (lastKeyAddedToTree != null &&
           lastKeyAddedToTree!.compareTo(value) > 0) {
@@ -132,7 +132,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       NodeModifier<T> modifier = _buildNodeValueInserter(value);
       _searchTreeAndModify(_rootNode!, value, modifier);
     }
-    logger.debug(() => _printTree());
+    logger.trace(() => _printTree());
     lastKeyAddedToTree = value;
   }
 
@@ -170,7 +170,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
   void _addIndexRecordToNode(
       BSharpIndexNode<T> node, IndexRecord<T> indexRecord) {
-    logger.debug(() =>
+    logger.trace(() =>
         "insertando key promocionada: ${indexRecord.key} en nodo ${node.id}");
     node.addIndexRecordToNode(indexRecord);
     node.fixFamilyRelations();
@@ -294,12 +294,12 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   ///
   /// May cause the tree to fuse nodes and shrink in height or width
   void remove(T value) {
-    logger.debug(() => "eliminando value: $value");
+    logger.trace(() => "eliminando value: $value");
     if (_rootNode != null) {
       var modifier = _buildNodeValueRemover(value);
       _searchTreeAndModify(_rootNode!, value, modifier);
     }
-    logger.debug(() => _printTree());
+    logger.trace(() => _printTree());
   }
 
   NodeModifier<T> _buildNodeValueRemover(T value) {
@@ -330,7 +330,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
   }
 
   void _removeValueFromSequentialNode(BSharpSequentialNode<T> node, T value) {
-    logger.debug(() =>
+    logger.trace(() =>
         "el valor a remover '$value' se encontró en el nodo con id: ${node.id}");
     node.removeValue(value);
     notifyObservers(
@@ -339,7 +339,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
   void _removeIndexRecordFromNode(
       BSharpIndexNode<T> node, IndexRecord<T> indexRecordToUpdate) {
-    logger.debug(() =>
+    logger.trace(() =>
         "index record a remover con id de rightNode: ${indexRecordToUpdate.rightNode.id}");
     node.rightNodes.removeWhere((indexRecord) =>
         indexRecord.rightNode.id == indexRecordToUpdate.rightNode.id);
@@ -698,7 +698,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
 
   /// Inserts a [listOfValues] into the tree, one by one
   void insertAll(List<T> listOfValues) {
-    logger.debug(() => "values to insert: $listOfValues");
+    logger.trace(() => "values to insert: $listOfValues");
     for (var value in listOfValues) {
       insert(value);
     }
@@ -803,7 +803,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         return true;
       }
     }
-    logger.debug(() => "no se pudo balancear con hermano derecho");
+    logger.trace(() => "no se pudo balancear con hermano derecho");
 
     var leftSiblingNode =
         node.getLeftSibling(); //Se intenta balancear con el hermano izquierdo
@@ -814,7 +814,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         return true;
       }
     }
-    logger.debug(() => "no se pudo balancear con hermano izquierdo");
+    logger.trace(() => "no se pudo balancear con hermano izquierdo");
     return false;
   }
 
@@ -831,7 +831,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         return true;
       }
     }
-    logger.debug(() => "no se pudo balancear con hermano derecho");
+    logger.trace(() => "no se pudo balancear con hermano derecho");
 
     var leftSiblingNode = node.getLeftSibling();
 
@@ -842,7 +842,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         return true;
       }
     }
-    logger.debug(() => "no se pudo balancear con hermano izquierdo");
+    logger.trace(() => "no se pudo balancear con hermano izquierdo");
     return false;
   }
 
@@ -859,7 +859,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         return true;
       }
     }
-    logger.debug(() => "no se pudo balancear con hermano derecho");
+    logger.trace(() => "no se pudo balancear con hermano derecho");
 
     var leftSiblingNode = node.getLeftSibling();
     if (leftSiblingNode != null) {
@@ -869,7 +869,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         return true;
       }
     }
-    logger.debug(() => "no se pudo balancear con hermano izquierdo");
+    logger.trace(() => "no se pudo balancear con hermano izquierdo");
     return false;
   }
 
@@ -966,7 +966,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         return true;
       }
     }
-    logger.debug(() => "no se pudo balancear con hermano derecho");
+    logger.trace(() => "no se pudo balancear con hermano derecho");
 
     var leftSiblingNode =
         node.getLeftSibling(); //Se intenta balancear con el hermano izquierdo
@@ -978,7 +978,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
       }
     }
 
-    logger.debug(() => "no se pudo balancear con hermano izquierdo");
+    logger.trace(() => "no se pudo balancear con hermano izquierdo");
 
     //Se trata de balancear entre los hermanos izquierdos (si existen)
     if (rightSiblingNode == null &&
@@ -992,7 +992,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
             leftLeftSibling, leftSiblingNode, node);
         return true;
       }
-      logger.debug(
+      logger.trace(
           () => "no se pudo balancear con hermano izquierdo del izquierdo");
     }
 
@@ -1009,7 +1009,7 @@ class BSharpTree<T extends Comparable<T>> extends Observable {
         return true;
       }
       logger
-          .debug(() => "no se pudo balancear con hermano derecho del derecho");
+          .trace(() => "no se pudo balancear con hermano derecho del derecho");
     }
 
     return false;

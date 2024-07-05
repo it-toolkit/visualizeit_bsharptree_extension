@@ -50,11 +50,15 @@ class BSharpTreeModel extends Model {
       } else {
         //Arranca una transición
         _lastTransitionTree = _baseTree.clone();
-        commandInExecution = command;
-        _currentFrame = 0;
         var transitionObserver = TreeTransitionObserver(_baseTree);
         var functionToExecute = command.commandToFunction();
-        functionToExecute(_baseTree);
+        try {
+          functionToExecute(_baseTree);
+        } catch(exception){
+          logger.error(() => "Exception thrown: $exception");
+        }
+        commandInExecution = command;
+        _currentFrame = 0;
         _transitions = transitionObserver.transitions;
         transitionObserver.removeObserver();
         if (_transitions.firstOrNull?.transitionTree != null) {
