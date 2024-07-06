@@ -1,2 +1,2 @@
 # visualizeit_bsharptree_extension
-Implementation of an extension for B# trees for visualize-it
+Implementation of B# tree, as an extension for Visualize IT
